@@ -1,0 +1,18 @@
+{
+  "template": "https://github.com/woltapp/wolt-python-package-cookiecutter",
+  "commit": "4eecc9c4d27e3c9321438bc1fdaf717bec5eadf6",
+  "checkout": null,
+  "context": {
+    "cookiecutter": {
+      "author_name": "Your name",
+      "author_email": "Adnan M. Niazi: adnaniazi@gmail.com",
+      "github_username": "adnaniazi",
+      "project_name": "capfinder",
+      "project_slug": "capfinder",
+      "package_name": "capfinder",
+      "project_short_description": "A package for decoding RNA cap types",
+      "_template": "https://github.com/woltapp/wolt-python-package-cookiecutter"
+    }
+  },
+  "directory": null
+}
