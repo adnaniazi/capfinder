@@ -3,7 +3,7 @@ name = "capfinder"
 version = "0.0.1"
 description = "A package for decoding RNA cap types"
 authors = [
-    "Your name <Adnan M. Niazi: adnaniazi@gmail.com>",
+    "Adnan M. Niazi <adnaniazi@gmail.com>",
 ]
 license = "MIT"
 readme = "README.md"
