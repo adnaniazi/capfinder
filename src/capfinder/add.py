@@ -1,4 +1,4 @@
-def add(a:int,b:int,c:int)->int:
+def add(a: int, b: int, c: int) -> int:
     """
     Add three numbers together
     param a: first number
@@ -6,7 +6,8 @@ def add(a:int,b:int,c:int)->int:
     param c: third number
     return: sum of a, b, and c
     """
-    return a+b+c
+    return a + b + c
+
 
 if __name__ == "__main__":
-    print(add(1,2,3))
+    print(add(1, 2, 3))
