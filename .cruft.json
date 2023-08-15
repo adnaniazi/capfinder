@@ -4,8 +4,8 @@
   "checkout": null,
   "context": {
     "cookiecutter": {
-      "author_name": "Your name",
-      "author_email": "Adnan M. Niazi: adnaniazi@gmail.com",
+      "author_name": "Adnan M. Niazi",
+      "author_email": "adnaniazi@gmail.com",
       "github_username": "adnaniazi",
       "project_name": "capfinder",
       "project_slug": "capfinder",
