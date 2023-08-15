@@ -1,4 +1,4 @@
-def add(a,b,c):
+def add(a:int,b:int,c:int)->int:
     """
     Add three numbers together
     param a: first number
