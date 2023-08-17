@@ -8,7 +8,7 @@
         "editor.defaultFormatter": "ms-python.black-formatter"
     },
     "python.formatting.provider": "none",
-    "python.defaultInterpreterPath": "~/kjempefuru_software/miniconda/miniconda/envs/capfinder/bin/python3",
+    "python.defaultInterpreterPath": "~/python311/bin/python3",
     "python.terminal.activateEnvironment": false,
     "python.analysis.completeFunctionParens": true,
     "autopyenv.pythonVersion": "~/kjempefuru_software/miniconda/miniconda/envs/capfinder/bin/python3"
