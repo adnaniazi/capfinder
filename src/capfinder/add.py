@@ -1,12 +1,12 @@
-def add(x: int, y: int, z: int) -> int:
+def add(a: int, y: int, z: int) -> int:
     """
     Add three numbers together
-    param x: first number
+    param a: first number
     param y: second number
     param z: third number
-    return: sum of x, y, and z
+    return: sum of a, y, and z
     """
-    return x + y + z
+    return a + y + z
 
 
 if __name__ == "__main__":
