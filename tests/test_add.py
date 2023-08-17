@@ -9,8 +9,8 @@ def test_add_function() -> None:
     # more test for 100% coverage
     result = add(1, 3, 5)
     assert result == 9
-    result = add(-1, 3, 5)
-    assert result == 7
+    result = add(-2, 3, 5)
+    assert result == 6
 
 
 if __name__ == "__main__":
