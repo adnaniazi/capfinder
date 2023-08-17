@@ -10,4 +10,4 @@ def add(a: int, b: int, c: int) -> int:
 
 
 if __name__ == "__main__":
-    print(add(1, 2, 3))
+    print(add(2, 2, 3))
