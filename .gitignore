@@ -80,3 +80,6 @@ venv.bak/
 
 # MacOSX
 *.DS_Store
+
+# type
+**/py.typed
