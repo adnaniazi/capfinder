@@ -14,4 +14,4 @@ def add(a: int, y: int, z: int) -> int:
 
 
 if __name__ == "__main__":
-    print(add(2, 2, 3))
+    add(2, 2, 3)
