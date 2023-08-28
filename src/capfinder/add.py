@@ -1,3 +1,7 @@
+import click
+
+
+@click.command()
 def add(a: int, y: int, z: int) -> int:
     """
     Add three numbers together
