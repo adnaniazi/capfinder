@@ -32,6 +32,7 @@ packages = [
 [tool.poetry.dependencies]
 python = ">=3.7.1, <4.0"
 click = "*"
+pod5 = "^0.2.4"
 
 [tool.poetry.dev-dependencies]
 autoflake = "*"
@@ -94,3 +95,10 @@ warn_redundant_casts = true
 warn_return_any = true
 check_untyped_defs = true
 show_error_codes = true
+
+#[tool.poetry.scripts]
+#add = "capfinder.add:add"
+
+#command1 = "package:module1:function1"
+#command2 = "package:module2:function2"
+#command3 = "package:module3:function3"
