@@ -426,49 +426,6 @@ files = [
 ]
 
 [[package]]
-name = "edlib"
-version = "1.3.9"
-description = "Lightweight, super fast library for sequence alignment using edit (Levenshtein) distance."
-optional = false
-python-versions = "*"
-files = [
-    {file = "edlib-1.3.9-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ea43f510f64fd0c784bfcab1b352ee4d45674e682ee17cf2fc249c57b6adc011"},
-    {file = "edlib-1.3.9-cp310-cp310-musllinux_1_1_i686.whl", hash = "sha256:e43950c99c5d7be68250538fa20cd72532433bfc265300761029a84ff9ae665c"},
-    {file = "edlib-1.3.9-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:d4de3389254c59171d7942f90be5d5496f44c41981e661ce859e8582f975180c"},
-    {file = "edlib-1.3.9-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:8cc9ca8c5e295d5b57868857e28697714962cdc603ee7e60ac76f5a64dc0eb2d"},
-    {file = "edlib-1.3.9-cp311-cp311-musllinux_1_1_i686.whl", hash = "sha256:9e80a142f3021470de912474e723e4ab512bce5b9b2914c18b006ef7c162dfea"},
-    {file = "edlib-1.3.9-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:849c8601c6ec4733a0c2bd0d75e959fc426193daf39841e6c360aab73c9dcacc"},
-    {file = "edlib-1.3.9-cp35-cp35m-macosx_10_9_x86_64.whl", hash = "sha256:b2f640f3aeeaa681d9f41ce94a38469beb1d1f3662e798dde635b0b62ebfada4"},
-    {file = "edlib-1.3.9-cp35-cp35m-manylinux1_x86_64.whl", hash = "sha256:1c7e5137fe5187b09ec00748ef09c3ddd4e3df0356c7c45fce2d938ab63bd221"},
-    {file = "edlib-1.3.9-cp35-cp35m-manylinux2010_x86_64.whl", hash = "sha256:edb81a1aad1c390ead8e456b2bd3e549f462f90c4c19b12902a3f84d5716f37c"},
-    {file = "edlib-1.3.9-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:5c4fc8d362a2608dbae7d02c1ff875f79ccbd9153b54c5160d3a8618daeb3109"},
-    {file = "edlib-1.3.9-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:7f5033d4dc9ae1723348175a96437d3fad2784cdd3944bb9104abbfc633ceeb0"},
-    {file = "edlib-1.3.9-cp36-cp36m-manylinux2010_x86_64.whl", hash = "sha256:7fc232ece8ba16c1d3c90819beb51a74fd5e04aec22bd09adbfbcb84b32b2aca"},
-    {file = "edlib-1.3.9-cp36-cp36m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:cfa6e3b5497bdc3414dfb41dc0ceb31ef3c803b95d881da2fc7308c306379be3"},
-    {file = "edlib-1.3.9-cp36-cp36m-musllinux_1_1_i686.whl", hash = "sha256:03652c2113ed977e6d7b056ebaff40d98e5b1092c5c20e0f49452c64a654490e"},
-    {file = "edlib-1.3.9-cp36-cp36m-musllinux_1_1_x86_64.whl", hash = "sha256:65b9ff4dc6731b6916a38ff012a2c594701a226e1ed5f6b1d3f514feef84766d"},
-    {file = "edlib-1.3.9-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:b91a80d3e6763a5ba1ee8f6eb87abb22edd2243d1672b227dc9f8f5eacc2f09e"},
-    {file = "edlib-1.3.9-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:40af82e085a6b8dac6d055e69ad4e4ca2e502e2a7c8e4b48e7c9c46534f249ec"},
-    {file = "edlib-1.3.9-cp37-cp37m-manylinux2010_x86_64.whl", hash = "sha256:d32939d7433c92e836daf6622c1f26252c84a6b7729a0aa93e960e36ffdff386"},
-    {file = "edlib-1.3.9-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:52ae06e0a4c54011a1caae18b137f53b1f57b2608b5083cd6c2e7e582fd39925"},
-    {file = "edlib-1.3.9-cp37-cp37m-musllinux_1_1_i686.whl", hash = "sha256:b2b5410a1338e0e6e41f9b72af5769840eb1a90963051b51fe9284c55e6c4b6c"},
-    {file = "edlib-1.3.9-cp37-cp37m-musllinux_1_1_x86_64.whl", hash = "sha256:af4d04cb2919605270676b70a29b83877c7bcb57b4c27afa26e9c0c66bb587b4"},
-    {file = "edlib-1.3.9-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:0ee63131cdf127d1f4849aa0f98bf3d6974cc60c1ca51ebefbf3d4356eb9f638"},
-    {file = "edlib-1.3.9-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:b1e5d136091383bb5b1ebc6b5a74feeb0651b4455c6630be11594a84c02e9ba6"},
-    {file = "edlib-1.3.9-cp38-cp38-manylinux2010_x86_64.whl", hash = "sha256:21099859eaa656bea35e21ce0d8562df57e55838812a43521cd46096a5d206ff"},
-    {file = "edlib-1.3.9-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5467333846538a14a6410885ffe2097eab6685f81942c6ffa8c68ca834ff79e1"},
-    {file = "edlib-1.3.9-cp38-cp38-musllinux_1_1_i686.whl", hash = "sha256:6a906af39c40e9391ac7e75b92e86fa858f48e54f59a0f44df39749e6f616928"},
-    {file = "edlib-1.3.9-cp38-cp38-musllinux_1_1_x86_64.whl", hash = "sha256:d32736c155e3d52f0bbd5ff14d5a3b2bcf3d9291aed060179754387ebc871119"},
-    {file = "edlib-1.3.9-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:402c17b2ee5c684c543fb5120ca2a24a288a798d083839bf8cab2560808ca4df"},
-    {file = "edlib-1.3.9-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:499ec22da9f078a199c73b5e1455e31130e4026baacc0b84e9c516fcea551ad0"},
-    {file = "edlib-1.3.9-cp39-cp39-manylinux2010_x86_64.whl", hash = "sha256:20d3743e231334ed8f3db3b400dd5b3db66b8eca5f6176114fef947978c20293"},
-    {file = "edlib-1.3.9-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:fc5257b90edecc476eadcc08144932ef99ebee307b8dbb49568a69578706a72a"},
-    {file = "edlib-1.3.9-cp39-cp39-musllinux_1_1_i686.whl", hash = "sha256:a29312e40f01fdae3f9aa4222e4a5cc7dc878991fe560d061a2b9a96a2c20498"},
-    {file = "edlib-1.3.9-cp39-cp39-musllinux_1_1_x86_64.whl", hash = "sha256:a395efe582889cecea0a5c38a4fca4a6c24a7023c4ba0b30621abc140fc45c04"},
-    {file = "edlib-1.3.9.tar.gz", hash = "sha256:64c3dfab3ebe3e759565a0cc71eb4df23cf3ce1713fd558af3c473dddc2a3766"},
-]
-
-[[package]]
 name = "eradicate"
 version = "2.3.0"
 description = "Removes commented-out code."
@@ -1353,6 +1310,24 @@ files = [
 ]
 
 [[package]]
+name = "parasail"
+version = "1.3.4"
+description = "pairwise sequence alignment library"
+optional = false
+python-versions = "*"
+files = [
+    {file = "parasail-1.3.4-py2.py3-none-macosx_10_9_x86_64.whl", hash = "sha256:58bb1a981ccab67721f88da070e305d04e5e4e35aac51dadd278301e6c799c93"},
+    {file = "parasail-1.3.4-py2.py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ede927ccbd8cd4180c33c4c44af9d720aedb31d098b2a83cdc32ba0059d7ea59"},
+    {file = "parasail-1.3.4-py2.py3-none-musllinux_1_1_i686.whl", hash = "sha256:e58b2d3cf1dd3a4c399e835861fbfd8d725abf3f7de2bd21cdee1d36c65f5e12"},
+    {file = "parasail-1.3.4-py2.py3-none-win32.whl", hash = "sha256:bccd9b561e87b345aa5676facfb2555da395dd56d202b293d1a6ee1488788257"},
+    {file = "parasail-1.3.4-py2.py3-none-win_amd64.whl", hash = "sha256:25b8260b922933c8e7e8ce008ddcbbff4ef998b7d077169ed441d70ab7a78b5a"},
+    {file = "parasail-1.3.4.tar.gz", hash = "sha256:d6a7035dfae3ef5aafdd7e6915711214c22b572ea059fa69d9d7ecbfb9b61b0f"},
+]
+
+[package.dependencies]
+numpy = "*"
+
+[[package]]
 name = "pathspec"
 version = "0.11.2"
 description = "Utility library for gitignore style pattern matching of file paths."
@@ -2228,4 +2203,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.7.1, <3.10"
-content-hash = "3497f031042277bb9b88f7349fcef7c6823fe50a608bce3d44b724c0a0a3e2f1"
+content-hash = "7908586137d98b8a19c012cd600ac0095c2fcebf31b21efc62e30b3dc955549b"
