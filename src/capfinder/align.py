@@ -137,7 +137,6 @@ def parasail_align(*, query: str, ref: str) -> Any:
     """
     alignment_result = parasail.sg_qx_trace_scan_32(query, ref, 10, 2, parasail.dnafull)
     alignment_score = alignment_result.score
-    print("alignment_score: ", alignment_score)
     assert alignment_result.len_ref == len(
         ref
     ), "alignment reference length is discordant with reference"
@@ -147,7 +146,7 @@ def parasail_align(*, query: str, ref: str) -> Any:
     assert alignment_result.end_ref == len(ref) - 1, "end_ref is not the end"
 
     try:
-        return trim_parasail_alignment(alignment_result)
+        return trim_parasail_alignment(alignment_result), alignment_score
     except IndexError as e:
         raise RuntimeError(
             "failed to find match operations in pairwise alignment"
@@ -172,14 +171,14 @@ def make_alignment_strings(
             3. The visual representation of the alignment with '|' for matches, '/' for mismatches,
                and ' ' for gaps or insertions.
     """
-    alignment.ref_start
-    alignment.ref_end
+    ref_start = alignment.ref_start
+    ref_end = alignment.ref_end
     query_start = alignment.query_start
     alignment.query_end
     alignment.cigar_pysam
     cigar_sam = alignment.cigar_sam
 
-    # 0-based indexing
+    # Initialize the strings
     aln_query = ""
     aln_target = ""
     aln = ""
@@ -191,6 +190,13 @@ def make_alignment_strings(
         aln_target += "-" * query_start
         aln_query += query[:query_start]
         aln += " " * query_start
+        query_count += query_start
+
+    if ref_start != 0:
+        aln_target += target[:ref_start]
+        target_count = ref_start
+        aln_query += "-" * ref_start
+        aln += " " * ref_start
         query_count += query_start
 
     # Handle the middle
@@ -229,11 +235,18 @@ def make_alignment_strings(
     # handle the end
     ql = len(query)
     tl = len(target)
+    target_remainder = tl - ref_end
+    if target_remainder:
+        aln_target += target[target_count:]
+        aln_query += target_remainder * "-"
+        aln += target_remainder * " "
+
     end_dash_len = ql - query_count
-    if ql > tl:
+    if end_dash_len:
         aln_target += "-" * end_dash_len
         aln_query += query[query_count:]
         aln += " " * end_dash_len
+        query_count += query_start
 
     return aln_query, aln, aln_target
 
@@ -278,7 +291,7 @@ def print_aligned_chunks(
 # Main function call
 def align(
     query_seq: str, target_seq: str, pretty_print_alns: bool
-) -> Tuple[str, str, str]:
+) -> Tuple[str, str, str, int]:
     """
     Main function call to align two sequences and print the alignment.
 
@@ -293,22 +306,27 @@ def align(
             2. The visual representation of the alignment with '|' for matches, '/' for mismatches,
                 and ' ' for gaps or insertions.
             3. The aligned target sequence with gaps.
+            4. The alignment score.
 
     """
+    # Perform the alignment
+    alignment, alignment_score = parasail_align(query=query_seq, ref=target_seq)
 
-    # define object from PairwiseAlignment class
-    alignment = parasail_align(query=query_seq, ref=target_seq)
+    # Generate the aligned strings
     aln_query, aln, aln_target = make_alignment_strings(
         query_seq, target_seq, alignment
     )
+
+    # Print the alignment in a pretty format if required
     if pretty_print_alns:
+        print("Alignment score:", alignment_score)
         print_aligned_chunks(aln_target, aln_query, aln, chunk_size=40)
 
-    return aln_query, aln, aln_target
+    return aln_query, aln, aln_target, alignment_score
 
 
 if __name__ == "__main__":
-    # Example usage
-    query_seq = "TTTCCCTTTCCCTCTTTCCCTCTCCCTCTCATCTTCTGTGTGTCTAATTGGCACGGCAACAGCCGGCACTTCAATCACGAATAGCCGATGCGGCGCAATGCTGCCAATAATCAACGGCAACAATAATAATAATCTTCTGCAAATACCAAACGGCACATGCCAACGGCATGTGCTGCGGCAACGGCACGGCATAATTAATAATCCAAATGGCAACGTAATAAATA"
-    target_seq = "CCGGACTTATCGCACCACCTATCCATCATCAGTACTGTNNNNNNCCTGGTAACTGGGAC"
+    query_seq = "GGGG"
+    target_seq = "AAAA"
+    pretty_print_alns = True
     align(query_seq=query_seq, target_seq=target_seq, pretty_print_alns=True)
