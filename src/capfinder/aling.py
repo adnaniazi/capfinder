@@ -275,10 +275,40 @@ def print_aligned_chunks(
         print()  # Gap between triplets
 
 
-# Example usage
-query_seq = "TTTCCCTTTCCCTCTTTCCCTCTCCCTCTCATCTTCTGTGTGTCTAATTGGCACGGCAACAGCCGGCACTTCAATCACGAATAGCCGATGCGGCGCAATGCTGCCAATAATCAACGGCAACAATAATAATAATCTTCTGCAAATACCAAACGGCACATGCCAACGGCATGTGCTGCGGCAACGGCACGGCATAATTAATAATCCAAATGGCAACGTAATAAATA"
-target_seq = "CCGGACTTATCGCACCACCTATCCATCATCAGTACTGTNNNNNNCCTGGTAACTGGGAC"
-# define object from PairwiseAlignment class
-alignment = parasail_align(query=query_seq, ref=target_seq)
-aln_query, aln, aln_target = make_alignment_strings(query_seq, target_seq, alignment)
-print_aligned_chunks(aln_target, aln_query, aln, chunk_size=40)
+# Main function call
+def align(
+    query_seq: str, target_seq: str, pretty_print_alns: bool
+) -> Tuple[str, str, str]:
+    """
+    Main function call to align two sequences and print the alignment.
+
+    Args:
+        query_seq (str): The query sequence.
+        target_seq (str): The target/reference sequence.
+        pretty_print_alns (bool): Whether to print the alignment in a pretty format.
+
+    Returns:
+        Tuple[str, str, str]: A tuple containing three strings:
+            1. The aligned query sequence with gaps.
+            2. The visual representation of the alignment with '|' for matches, '/' for mismatches,
+                and ' ' for gaps or insertions.
+            3. The aligned target sequence with gaps.
+
+    """
+
+    # define object from PairwiseAlignment class
+    alignment = parasail_align(query=query_seq, ref=target_seq)
+    aln_query, aln, aln_target = make_alignment_strings(
+        query_seq, target_seq, alignment
+    )
+    if pretty_print_alns:
+        print_aligned_chunks(aln_target, aln_query, aln, chunk_size=40)
+
+    return aln_query, aln, aln_target
+
+
+if __name__ == "__main__":
+    # Example usage
+    query_seq = "TTTCCCTTTCCCTCTTTCCCTCTCCCTCTCATCTTCTGTGTGTCTAATTGGCACGGCAACAGCCGGCACTTCAATCACGAATAGCCGATGCGGCGCAATGCTGCCAATAATCAACGGCAACAATAATAATAATCTTCTGCAAATACCAAACGGCACATGCCAACGGCATGTGCTGCGGCAACGGCACGGCATAATTAATAATCCAAATGGCAACGTAATAAATA"
+    target_seq = "CCGGACTTATCGCACCACCTATCCATCATCAGTACTGTNNNNNNCCTGGTAACTGGGAC"
+    align(query_seq=query_seq, target_seq=target_seq, pretty_print_alns=True)
