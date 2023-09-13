@@ -11,5 +11,9 @@
     "python.defaultInterpreterPath": "~/python311/bin/python3",
     "python.terminal.activateEnvironment": false,
     "python.analysis.completeFunctionParens": true,
-    "autopyenv.pythonVersion": "~/kjempefuru_software/miniconda/miniconda/envs/capfinder/bin/python3"
+    "autopyenv.pythonVersion": "~/kjempefuru_software/miniconda/miniconda/envs/capfinder/bin/python3",
+    "workbench.tree.indent": 15,
+    "workbench.tree.renderIndentGuides": "always",
+    "workbench.colorCustomizations": {
+    "tree.indentGuidesStroke": "#05ef3c"}
 }
