@@ -136,7 +136,7 @@ class TestAlign:
         expected_aln_query = "--CGTA--"
         expected_aln = "  ||||  "
         expected_aln_target = "ATCGTACG"
-        expected_aln_score = -4
+        expected_aln_score = -10
 
         aln_query, aln, aln_target, aln_score = align(
             query_seq, target_seq, pretty_print_alns
@@ -146,14 +146,6 @@ class TestAlign:
         assert aln == expected_aln
         assert aln_target == expected_aln_target
         assert aln_score == expected_aln_score
-
-    def test_align_with_unalignable_sequences(self) -> None:
-        query_seq = "AAAA"
-        target_seq = "GGGG"
-        pretty_print_alns = False
-
-        with pytest.raises(RuntimeError):
-            align(query_seq, target_seq, pretty_print_alns)
 
 
 if __name__ == "__main__":

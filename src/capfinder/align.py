@@ -77,6 +77,34 @@ def cigartuples_from_string(cigarstring: str) -> CigarTuplesPySam:
     ]
 
 
+def parasail_align(*, query: str, ref: str) -> Any:
+    """
+    Semi-global alignment allowing for gaps at the start and end of the query
+    sequence.
+
+    :param query: str
+    :param ref: str
+    :return: PairwiseAlignment
+    :raises RuntimeError when no matching/mismatching operations are found
+    """
+    alignment_result = parasail.sg_qx_trace_scan_32(query, ref, 10, 5, parasail.dnafull)
+    alignment_score = alignment_result.score
+    assert alignment_result.len_ref == len(
+        ref
+    ), "alignment reference length is discordant with reference"
+    assert alignment_result.len_query == len(
+        query
+    ), "alignment query length is discordant with query"
+    assert alignment_result.end_ref == len(ref) - 1, "end_ref is not the end"
+
+    try:
+        return trim_parasail_alignment(alignment_result), alignment_score
+    except IndexError as e:
+        raise RuntimeError(
+            "failed to find match operations in pairwise alignment"
+        ) from e
+
+
 def trim_parasail_alignment(alignment_result: Any) -> PairwiseAlignment:
     """
     Trim the alignment result to remove leading and trailing gaps.
@@ -123,34 +151,6 @@ def trim_parasail_alignment(alignment_result: Any) -> PairwiseAlignment:
         cigar_pysam=cigar_pysam,
         cigar_sam=cigar_sam,
     )
-
-
-def parasail_align(*, query: str, ref: str) -> Any:
-    """
-    Semi-global alignment allowing for gaps at the start and end of the query
-    sequence.
-
-    :param query: str
-    :param ref: str
-    :return: PairwiseAlignment
-    :raises RuntimeError when no matching/mismatching operations are found
-    """
-    alignment_result = parasail.sg_qx_trace_scan_32(query, ref, 10, 2, parasail.dnafull)
-    alignment_score = alignment_result.score
-    assert alignment_result.len_ref == len(
-        ref
-    ), "alignment reference length is discordant with reference"
-    assert alignment_result.len_query == len(
-        query
-    ), "alignment query length is discordant with query"
-    assert alignment_result.end_ref == len(ref) - 1, "end_ref is not the end"
-
-    try:
-        return trim_parasail_alignment(alignment_result), alignment_score
-    except IndexError as e:
-        raise RuntimeError(
-            "failed to find match operations in pairwise alignment"
-        ) from e
 
 
 def make_alignment_strings(
@@ -232,7 +232,7 @@ def make_alignment_strings(
             target_count += length
             query_count += length
 
-    # handle the end
+    # Handle the end
     ql = len(query)
     tl = len(target)
     target_remainder = tl - ref_end
@@ -326,7 +326,7 @@ def align(
 
 
 if __name__ == "__main__":
-    query_seq = "GGGG"
-    target_seq = "AAAA"
+    query_seq = "ATCCCATCCCATCCCACATCCCAACTCCCTAGGCATCCCATCCCATCCCATCCCCATTTCCAGCCGACATTAATTAATTCTTTAGTATTTGACAACTCTTTCCAACTCTTTATCATCCCTCTTTCCATTGACCCTGCTAATCTGCAACCCCTGCAACTTTCCCACCTCTTAATAGTGTTCTCTGCTCTAATTTGTATTTTCCCAACCCTATTGTCATTAAT"
+    target_seq = "CCGGACTTATCGCACCACCTATCCATCATCAGTACTGTNNNNNNCCTGGTAACTGGGAC"
     pretty_print_alns = True
     align(query_seq=query_seq, target_seq=target_seq, pretty_print_alns=True)
