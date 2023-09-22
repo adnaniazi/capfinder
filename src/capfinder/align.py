@@ -5,22 +5,10 @@ from typing import Any, List, Tuple
 
 import parasail  # type: ignore
 
+from capfinder.constants import CIGAR_CODES, CODE_TO_OP, OP_TO_CODE
+
 CigarTuplesPySam = List[Tuple[int, int]]
 CigarTuplesSam = List[Tuple[str, int]]
-
-CIGAR_CODES = ["M", "I", "D", "N", "S", "H", "P", "=", "X"]
-CODE_TO_OP = {
-    "M": 0,
-    "I": 1,
-    "D": 2,
-    "N": 3,
-    "S": 4,
-    "H": 5,
-    "P": 6,
-    "=": 7,
-    "X": 8,
-}
-OP_TO_CODE = {str(v): k for k, v in CODE_TO_OP.items()}
 
 CIGAR_STRING_PATTERN = re.compile(r"(\d+)" + f"([{''.join(CIGAR_CODES)}])")
 
@@ -85,72 +73,63 @@ def parasail_align(*, query: str, ref: str) -> Any:
     :param query: str
     :param ref: str
     :return: PairwiseAlignment
-    :raises RuntimeError when no matching/mismatching operations are found
     """
-    alignment_result = parasail.sg_qx_trace_scan_32(query, ref, 10, 5, parasail.dnafull)
-    alignment_score = alignment_result.score
-    assert alignment_result.len_ref == len(
-        ref
-    ), "alignment reference length is discordant with reference"
-    assert alignment_result.len_query == len(
-        query
-    ), "alignment query length is discordant with query"
-    assert alignment_result.end_ref == len(ref) - 1, "end_ref is not the end"
-
-    try:
-        return trim_parasail_alignment(alignment_result), alignment_score
-    except IndexError as e:
-        raise RuntimeError(
-            "failed to find match operations in pairwise alignment"
-        ) from e
+    alignment_result = parasail.sg_trace_scan_32(query, ref, 10, 2, parasail.dnafull)
+    return alignment_result
 
 
 def trim_parasail_alignment(alignment_result: Any) -> PairwiseAlignment:
     """
     Trim the alignment result to remove leading and trailing gaps.
     """
-    ref_start = 0
-    ref_end = alignment_result.len_ref
-    query_start = 0
-    query_end = alignment_result.len_query
-    fixed_start = False
-    fixed_end = False
 
-    cigar_string = alignment_result.cigar.decode.decode()
-    cigar_tuples = deque(cigartuples_from_string(cigar_string))
+    try:
+        ref_start = 0
+        ref_end = alignment_result.len_ref
+        query_start = 0
+        query_end = alignment_result.len_query
+        fixed_start = False
+        fixed_end = False
 
-    while not (fixed_start and fixed_end):
-        first_op, first_length = cigar_tuples[0]
-        if first_op in (1, 4):  # insert, soft-clip, increment query start
-            query_start += first_length
-            cigar_tuples.popleft()
-        elif first_op == 2:  # delete, increment reference start
-            ref_start += first_length
-            cigar_tuples.popleft()
-        else:
-            fixed_start = True
+        cigar_string = alignment_result.cigar.decode.decode()
+        cigar_tuples = deque(cigartuples_from_string(cigar_string))
 
-        last_op, last_length = cigar_tuples[-1]
-        if last_op in (1, 4):  # decrement the query end
-            query_end -= last_length
-            cigar_tuples.pop()
-        elif last_op == 2:  # decrement the ref_end
-            ref_end -= last_length
-            cigar_tuples.pop()
-        else:
-            fixed_end = True
+        while not (fixed_start and fixed_end):
+            first_op, first_length = cigar_tuples[0]
+            if first_op in (1, 4):  # insert, soft-clip, increment query start
+                query_start += first_length
+                cigar_tuples.popleft()
+            elif first_op == 2:  # delete, increment reference start
+                ref_start += first_length
+                cigar_tuples.popleft()
+            else:
+                fixed_start = True
 
-    cigar_pysam = list(cigar_tuples)
-    cigar_sam = [(OP_TO_CODE[str(k)], v) for k, v in cigar_pysam]
+            last_op, last_length = cigar_tuples[-1]
+            if last_op in (1, 4):  # decrement the query end
+                query_end -= last_length
+                cigar_tuples.pop()
+            elif last_op == 2:  # decrement the ref_end
+                ref_end -= last_length
+                cigar_tuples.pop()
+            else:
+                fixed_end = True
 
-    return PairwiseAlignment(
-        ref_start=ref_start,
-        ref_end=ref_end,
-        query_start=query_start,
-        query_end=query_end,
-        cigar_pysam=cigar_pysam,
-        cigar_sam=cigar_sam,
-    )
+        cigar_pysam = list(cigar_tuples)
+        cigar_sam = [(OP_TO_CODE[str(k)], v) for k, v in cigar_pysam]
+
+        return PairwiseAlignment(
+            ref_start=ref_start,
+            ref_end=ref_end,
+            query_start=query_start,
+            query_end=query_end,
+            cigar_pysam=cigar_pysam,
+            cigar_sam=cigar_sam,
+        )
+    except IndexError as e:
+        raise RuntimeError(
+            "failed to find match operations in pairwise alignment"
+        ) from e
 
 
 def make_alignment_strings(
@@ -174,8 +153,6 @@ def make_alignment_strings(
     ref_start = alignment.ref_start
     ref_end = alignment.ref_end
     query_start = alignment.query_start
-    alignment.query_end
-    alignment.cigar_pysam
     cigar_sam = alignment.cigar_sam
 
     # Initialize the strings
@@ -251,9 +228,9 @@ def make_alignment_strings(
     return aln_query, aln, aln_target
 
 
-def print_aligned_chunks(
+def make_alignment_chunks(
     target: str, query: str, alignment: str, chunk_size: int
-) -> None:
+) -> str:
     """
     Divide three strings (target, query, and alignment) into chunks of the specified length
     and print them as triplets with the specified prefixes and a one-line gap between each triplet.
@@ -265,7 +242,7 @@ def print_aligned_chunks(
         chunk_size (int): The desired chunk size.
 
     Returns:
-        None
+        aln_string (str): The aligned strings in chunks with the specified prefix.
     """
     # Check if chunk size is valid
     if chunk_size <= 0:
@@ -281,11 +258,13 @@ def print_aligned_chunks(
     ]
 
     # Iterate over the triplets and print them
+    aln_string = ""
     for t_chunk, q_chunk, a_chunk in zip(target_chunks, query_chunks, alignment_chunks):
-        print("QRY:", q_chunk)
-        print("ALN:", a_chunk)
-        print("REF:", t_chunk)
-        print()  # Gap between triplets
+        aln_string += f"QRY: {q_chunk}\n"
+        aln_string += f"ALN: {a_chunk}\n"
+        aln_string += f"REF: {t_chunk}\n\n"
+
+    return aln_string
 
 
 # Main function call
@@ -310,8 +289,9 @@ def align(
 
     """
     # Perform the alignment
-    alignment, alignment_score = parasail_align(query=query_seq, ref=target_seq)
-
+    alignment = parasail_align(query=query_seq, ref=target_seq)
+    alignment_score = alignment.score
+    alignment = trim_parasail_alignment(alignment)
     # Generate the aligned strings
     aln_query, aln, aln_target = make_alignment_strings(
         query_seq, target_seq, alignment
@@ -320,13 +300,22 @@ def align(
     # Print the alignment in a pretty format if required
     if pretty_print_alns:
         print("Alignment score:", alignment_score)
-        print_aligned_chunks(aln_target, aln_query, aln, chunk_size=40)
-
-    return aln_query, aln, aln_target, alignment_score
+        chunked_aln_str = make_alignment_chunks(
+            aln_target, aln_query, aln, chunk_size=40
+        )
+        print(chunked_aln_str)
+        return (
+            "",
+            "",
+            chunked_aln_str,
+            alignment_score,
+        )
+    else:
+        return aln_query, aln, aln_target, alignment_score
 
 
 if __name__ == "__main__":
-    query_seq = "ATCCCATCCCATCCCACATCCCAACTCCCTAGGCATCCCATCCCATCCCATCCCCATTTCCAGCCGACATTAATTAATTCTTTAGTATTTGACAACTCTTTCCAACTCTTTATCATCCCTCTTTCCATTGACCCTGCTAATCTGCAACCCCTGCAACTTTCCCACCTCTTAATAGTGTTCTCTGCTCTAATTTGTATTTTCCCAACCCTATTGTCATTAAT"
-    target_seq = "CCGGACTTATCGCACCACCTATCCATCATCAGTACTGTNNNNNNCCTGGTAACTGGGAC"
+    query_seq = "CGTA"
+    target_seq = "ATCGTACG"
     pretty_print_alns = True
     align(query_seq=query_seq, target_seq=target_seq, pretty_print_alns=True)

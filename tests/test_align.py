@@ -71,10 +71,10 @@ class TestAlign:
         target_seq = "ATCGTACG"
         pretty_print_alns = False
 
-        expected_aln_query = "A-CCTA-G"
-        expected_aln = "| |/|| |"
-        expected_aln_target = "ATCGTACG"
-        expected_aln_score = 1
+        expected_aln_query = "-----ACCTAG"
+        expected_aln = "     ||/   "
+        expected_aln_target = "ATCGTACG---"
+        expected_aln_score = 6
 
         aln_query, aln, aln_target, aln_score = align(
             query_seq, target_seq, pretty_print_alns
@@ -114,10 +114,10 @@ class TestAlign:
         target_seq = "TACGAT"
         pretty_print_alns = False
 
-        expected_aln_query = "AT-CG-TA"
-        expected_aln = " | || | "
-        expected_aln_target = "-TACGAT-"
-        expected_aln_score = 0
+        expected_aln_query = "ATCGTA----"
+        expected_aln = "    ||    "
+        expected_aln_target = "----TACGAT"
+        expected_aln_score = 10
 
         aln_query, aln, aln_target, aln_score = align(
             query_seq, target_seq, pretty_print_alns
@@ -136,7 +136,7 @@ class TestAlign:
         expected_aln_query = "--CGTA--"
         expected_aln = "  ||||  "
         expected_aln_target = "ATCGTACG"
-        expected_aln_score = -10
+        expected_aln_score = 20
 
         aln_query, aln, aln_target, aln_score = align(
             query_seq, target_seq, pretty_print_alns
