@@ -8,10 +8,10 @@
         "editor.defaultFormatter": "ms-python.black-formatter"
     },
     "python.formatting.provider": "none",
-    "python.defaultInterpreterPath": "~/python311/bin/python3",
-    "python.terminal.activateEnvironment": false,
+    "python.defaultInterpreterPath": "/Home/ii/adnann/mamba/envs/capfinder/bin/python",
+    "python.terminal.activateEnvironment": true,
     "python.analysis.completeFunctionParens": true,
-    "autopyenv.pythonVersion": "~/kjempefuru_software/miniconda/miniconda/envs/capfinder/bin/python3",
+    "autopyenv.pythonVersion": "/Home/ii/adnann/mamba/envs/capfinder/bin/python",
     "workbench.tree.indent": 15,
     "workbench.tree.renderIndentGuides": "always",
     "workbench.colorCustomizations": {
