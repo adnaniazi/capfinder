@@ -35,6 +35,9 @@ click = "*"
 pod5 = "*"
 pysam = "^0.21.0"
 parasail = "^1.3.4"
+biopython = "^1.81"
+mpire = "^2.8.0"
+tqdm = "^4.66.1"
 
 [tool.poetry.dev-dependencies]
 autoflake = "*"
