@@ -150,6 +150,24 @@ def process_fastq_path(
         print("Invalid path. Please provide a valid FASTQ file or folder path.")
 
 
+def visualize_alns(
+    path: str, reference: str, num_processes: int, output_folder: str
+) -> None:
+    """
+    Main function to visualize alignments.
+
+    Args:
+        path (str): The path to the FASTQ file or folder.
+        reference (str): The reference sequence to align the read to.
+        num_processes (int): The number of processes to use for parallel processing.
+        output_folder (str): The folder where the output file will be stored.
+
+    Returns:
+        None
+    """
+    process_fastq_path(path, reference, num_processes, output_folder)
+
+
 if __name__ == "__main__":
     # Example usage:
     # Specify the path to the FASTQ file or folder
@@ -165,4 +183,4 @@ if __name__ == "__main__":
     reference = "CCGGACTTATCGCACCACCTATCCATCATCAGTACTGTNNNNNNCCTGGTAACTGGGAC"
 
     # Call the function to process the FASTQ file or folder
-    process_fastq_path(path, reference, num_processes, output_folder)
+    visualize_alns(path, reference, num_processes, output_folder)

@@ -316,7 +316,7 @@ def process_fastq_file(
             write_csv(
                 results,
                 output_filepath=os.path.join(
-                    output_folder, filename_no_extension + "_train_ote_aln.csv"
+                    output_folder, filename_no_extension + "_train_ote_aln_results.csv"
                 ),
             )
 
