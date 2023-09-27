@@ -1,11 +1,18 @@
 import filecmp
 import os
 import tempfile
+from typing import Any
 
-from capfinder.visualize_alns import calculate_average_quality, visualize_alns
+import pytest
+
+from capfinder.visualize_alns import (
+    calculate_average_quality,
+    process_read,
+    visualize_alns,
+)
 
 
-class TestCalculateAverageQuality:
+class TestVisualizeAlns:
     # Calculate average quality score for a read with all quality scores equal
     def test_all_quality_scores_equal(self) -> None:
         quality_scores = [30, 30, 30, 30, 30]
@@ -151,3 +158,28 @@ class TestCalculateAverageQuality:
             # Assert that the two files are identical
             assert filecmp.cmp(expected_fq1_output_filepath, actual_result_fq1_filepath)
             assert filecmp.cmp(expected_fq2_output_filepath, actual_result_fq2_filepath)
+
+    @pytest.fixture  # Define a fixture to set up the mocker object
+    def mocker_fixture(self, mocker: Any) -> Any:
+        return mocker
+
+    # Process a single read with valid input and reference sequence.
+    def test_process_read_valid_input(self, mocker_fixture: Any) -> None:
+        # Create a mock record object with valid input
+        mocker = mocker_fixture
+        record = mocker.Mock()
+        record.id = "read1"
+        record.letter_annotations = {"phred_quality": [30, 40, 35, 38]}
+        record.seq = "ATCG"
+
+        # Create a mock reference sequence
+        reference = "AGCT"
+
+        # Call the process_read function
+        mocker.patch("capfinder.visualize_alns.process_read", side_effect=process_read)
+        output_string = process_read(record, reference)
+
+        # Check the output string
+        expected_output = ">read1 36\nATCG\n\nAlignment Score: 2\nQRY: ATCG\nALN: |/|/\nREF: AGCT\n\n\n"
+
+        assert output_string == expected_output
