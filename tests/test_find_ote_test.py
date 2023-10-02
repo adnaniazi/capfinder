@@ -1,7 +1,7 @@
 import os
 import tempfile
 
-from capfinder.find_ote_test import find_ote_test
+from capfinder.find_ote_test import find_ote_test, make_coordinates
 
 
 class TestFindOTETest:
@@ -83,3 +83,38 @@ class TestFindOTETest:
             with open(actual_fq2_output_filepath) as file2:
                 content2 = file2.read()
             assert content1 == content2
+
+    def test_make_coordinates_all_matches(self) -> None:
+        aln_str = "|||||||"
+        ref_str = "ATCGATG"
+        result_list = make_coordinates(aln_str, ref_str)
+        expected_list = [0, 1, 2, 3, 4, 5, 6]
+        assert result_list == expected_list
+
+    def test_make_coordinates_with_deletions(self) -> None:
+        aln_str = "| |||||"
+        ref_str = "ATCGATG"
+        result_list = make_coordinates(aln_str, ref_str)
+        expected_list = [0, 1, 2, 3, 4, 5, 6]
+        assert result_list == expected_list
+
+    def test_make_coordinates_with_insertions(self) -> None:
+        aln_str = "| |||||"
+        ref_str = "A-CGATG"
+        result_list = make_coordinates(aln_str, ref_str)
+        expected_list = [0, -1, 1, 2, 3, 4, 5]
+        assert result_list == expected_list
+
+    def test_make_coordinates_with_gaps_at_5pime_end_in_query(self) -> None:
+        aln_str = "  | |||||"
+        ref_str = "--A-CGATG"
+        result_list = make_coordinates(aln_str, ref_str)
+        expected_list = [-1, -1, 0, -1, 1, 2, 3, 4, 5]
+        assert result_list == expected_list
+
+    def test_make_coordinates_with_gaps_at_both_ends_of_query(self) -> None:
+        aln_str = "  | |||||  "
+        ref_str = "--A-CGATG--"
+        result_list = make_coordinates(aln_str, ref_str)
+        expected_list = [-1, -1, 0, -1, 1, 2, 3, 4, 5, -1, -1]
+        assert result_list == expected_list
