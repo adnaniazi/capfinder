@@ -12,10 +12,8 @@ from capfinder.utils import file_opener
 # Length of the NNNNNN region in the training reference
 N_REGION_LEN = 6
 
-# Length of the flanking regions before and after
-# the NNNNNN region for assessing the alignment quality
+# Length of the flanking region before the cap
 BEFORE_N_REGION_WINDOW_LEN = 10
-AFTER_N_REGION_WINDOW_LEN = 10
 
 # Number of flanking bases on each of the left and right
 # right sides of N1N2 cap bases
