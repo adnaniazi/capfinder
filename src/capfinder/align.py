@@ -315,7 +315,7 @@ def align(
 
 
 if __name__ == "__main__":
-    query_seq = "CGTA"
-    target_seq = "ATCGTACG"
+    query_seq = "CCCTCACCCTACCACACCCCTCCCCTACACATACCTACTCCTACACCCATCTACCCCCACACCCCTAAACAGGGTTATGGTCC"
+    target_seq = "CCGGACTTATCGCACCACCTATCCATCATCAGTACTGT"
     pretty_print_alns = True
     align(query_seq=query_seq, target_seq=target_seq, pretty_print_alns=True)

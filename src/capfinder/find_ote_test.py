@@ -105,11 +105,11 @@ def has_good_aln_in_n_region(match_cnt: int, mismatch_cnt: int, gap_cnt: int) ->
         return False
 
 
-def has_good_aln_ns_flanking_region(
+def has_good_aln_in_5prime_flanking_region(
     match_cnt: int, mismatch_cnt: int, gap_cnt: int
 ) -> bool:
     """
-    Checks if the alignment in the flanking region before or after the NNNNNN region is good.
+    Checks if the alignment in the flanking region before the cap is good.
 
     Args:
         match_cnt (int): The number of matches in the flanking region.
@@ -149,7 +149,7 @@ def process_read(
             alignment_score (float): The alignment score for the read.
             left_flanking_region_start_fastq_pos (int or None): The starting position of the left flanking region
             in the FASTQ file, if available.
-            cap0_read_fastq_pos (int or None): The position of the caps N1 base in the FASTQ file (0-indexed), if available.
+            cap_n1_minus_1_read_fastq_pos (int or None): The position of the caps N1 base in the FASTQ file (0-indexed), if available.
             right_flanking_region_start_fastq_pos (int or None): The starting position of the right flanking region
             in the FASTQ file, if available.
     """
@@ -167,7 +167,7 @@ def process_read(
         "reason": None,
         "alignment_score": aln_score,
         "left_flanking_region_start_fastq_pos": None,
-        "cap0_read_fastq_pos": None,
+        "cap_n1_minus_1_read_fastq_pos": None,
         "right_flanking_region_start_fastq_pos": None,
         "roi_fasta": None,
     }
@@ -180,90 +180,63 @@ def process_read(
     # Make index coordinates along the reference
     coord_list = make_coordinates(aln_str, ref_str)
 
-    # Check if the first cap base is in the coordinates list. If not then
-    # the alignment did not even reach the cap, so it is a bad read then.
+    # Check if the the first base 5 prime of the cap N1 base is in
+    # the coordinates list. If not then the alignment did not
+    # even reach the cap, so it is a bad read then.
     try:
-        cap0_idx = coord_list.index(
-            cap0_pos
-        )  # cap0 position in the reference with gaps
+        cap_n1_minus_1_idx = coord_list.index(cap0_pos - 1)
     except Exception:
         out_ds_failed["reason"] = "aln_does_not_reach_the_cap_base"
         return out_ds_failed
 
-    # Check if the NNNNNN region in the reference has matches in it
-    # 1. First find the end index of the NNNNNN region
-    try:
-        n_region_end_idx = coord_list.index(cap0_pos + N_REGION_LEN - 1)
-    except Exception:
-        out_ds_failed["reason"] = "aln_does_not_reach_nnnnnn_region"
-        return out_ds_failed
-
     # 2. Define regions in which to check for good alignment
-    nnn_region = (cap0_idx, n_region_end_idx + 1)
-    before_nnn_region = (cap0_idx - BEFORE_N_REGION_WINDOW_LEN, cap0_idx)
-    after_nnn_region = (
-        n_region_end_idx + 1,
-        n_region_end_idx + 1 + AFTER_N_REGION_WINDOW_LEN,
+    before_nnn_region = (
+        cap_n1_minus_1_idx - BEFORE_N_REGION_WINDOW_LEN,
+        cap_n1_minus_1_idx + 1,
     )
 
     # 3. Extract alignment strings for each region
-    aln_str_nnn_region = aln_str[nnn_region[0] : nnn_region[1]]
     aln_str_before_nnn_region = aln_str[before_nnn_region[0] : before_nnn_region[1]]
-    aln_str_after_nnn_region = aln_str[after_nnn_region[0] : after_nnn_region[1]]
 
     # 4. Count matches, mismatches, and gaps in each region
-    n_match_cnt, n_mismatch_cnt, n_gap_cnt = cnt_match_mismatch_gaps(aln_str_nnn_region)
     bn_match_cnt, bn_mismatch_cnt, bn_gap_cnt = cnt_match_mismatch_gaps(
         aln_str_before_nnn_region
     )
-    an_match_cnt, an_mismatch_cnt, an_gap_cnt = cnt_match_mismatch_gaps(
-        aln_str_after_nnn_region
-    )
 
-    # 5. Are there good alignments in the the NNN region and the regions flanking it?
-    has_good_aln_in_nnn_region = has_good_aln_in_n_region(
-        n_match_cnt, n_mismatch_cnt, n_gap_cnt
-    )
-    has_good_aln_before_n_region = has_good_aln_ns_flanking_region(
+    # 5. Is there a good alignment region flanking 5' of the cap?
+    has_good_aln_before_n_region = has_good_aln_in_5prime_flanking_region(
         bn_match_cnt, bn_mismatch_cnt, bn_gap_cnt
     )
-    has_good_aln_after_n_region = has_good_aln_ns_flanking_region(
-        an_match_cnt, an_mismatch_cnt, an_gap_cnt
-    )
-
-    # 6. If all three alignment are good then a read has good and reliable OTE
-    if not (
-        has_good_aln_before_n_region
-        and has_good_aln_in_nnn_region
-        and has_good_aln_after_n_region
-    ):
-        out_ds_failed["reason"] = "111"  # 111 means all three regions are good
-        if not (has_good_aln_before_n_region):
-            reason_list = list(out_ds_failed["reason"])
-            reason_list[0] = "0"
-            out_ds_failed["reason"] = "".join(reason_list)
-        if not (has_good_aln_in_nnn_region):
-            reason_list = list(out_ds_failed["reason"])
-            reason_list[1] = "0"
-            out_ds_failed["reason"] = "".join(reason_list)
-        if not (has_good_aln_after_n_region):
-            reason_list = list(out_ds_failed["reason"])
-            reason_list[2] = "0"
-            out_ds_failed["reason"] = "".join(reason_list)
+    if not (has_good_aln_before_n_region):
+        out_ds_failed["reason"] = "bad_alignment_before_the_cap"
         return out_ds_failed
 
-    # Find the position of cap N1 base in read's sequence (0-based indexing)
-    cap0_read_fastq_pos = qry_str[:cap0_idx].replace("-", "").count("") - 1
+    # Find the position of cap N1-1 base in read's sequence (0-based indexing)
+    cap_n1_minus_1_read_fastq_pos = (
+        qry_str[:cap_n1_minus_1_idx].replace("-", "").count("")
+    )
 
-    # Find the index of first base of the left flanking region
-    left_flanking_region_start_ref_idx = cap0_idx - NUM_CAP_FLANKING_BASES
+    # To reach the 5' end of the left flanking region, we need to find
+    # to over the alignment string on count the matches and mismatches
+    # but not the gaps
+    idx = cap_n1_minus_1_idx
+    cnt = 0
+    while True:
+        if cnt == NUM_CAP_FLANKING_BASES:
+            break
+        else:
+            if aln_str[idx] != " ":
+                cnt += 1
+                left_flanking_region_start_idx = idx
+        idx -= 1
+
     left_flanking_region_start_fastq_pos = (
-        qry_str[:left_flanking_region_start_ref_idx].replace("-", "").count("") - 1
+        qry_str[:left_flanking_region_start_idx].replace("-", "").count("") - 1
     )
-    right_flanking_region_end_ref_idx = cap0_idx + 1 + NUM_CAP_FLANKING_BASES
     right_flanking_region_start_fastq_pos = (
-        qry_str[:right_flanking_region_end_ref_idx].replace("-", "").count("") - 1
+        cap_n1_minus_1_read_fastq_pos + NUM_CAP_FLANKING_BASES + 1
     )
+
     roi_fasta = sequence[
         left_flanking_region_start_fastq_pos:right_flanking_region_start_fastq_pos
     ]
@@ -271,10 +244,10 @@ def process_read(
     out_ds_passed = {
         "read_id": record.id,
         "read_type": "good",
-        "reason": "111",
+        "reason": "good_alignment_in_cap-flanking_regions",
         "alignment_score": aln_score,
         "left_flanking_region_start_fastq_pos": left_flanking_region_start_fastq_pos,
-        "cap0_read_fastq_pos": cap0_read_fastq_pos,
+        "cap_n1_minus_1_read_fastq_pos": cap_n1_minus_1_read_fastq_pos,
         "right_flanking_region_start_fastq_pos": right_flanking_region_start_fastq_pos,
         "roi_fasta": roi_fasta,
     }
@@ -322,7 +295,7 @@ def process_fastq_file(
                 results,
                 output_filepath=os.path.join(
                     output_folder,
-                    filename_no_extension + "_train_ote_search_results.csv",
+                    filename_no_extension + "_test_ote_search_results.csv",
                 ),
             )
 
@@ -415,7 +388,7 @@ def dispatcher(
         raise ValueError("Error! Invalid path type. Path must be a file or folder.")
 
 
-def find_ote_train(
+def find_ote_test(
     input_path: str,
     reference: str,
     cap0_pos: int,
@@ -423,8 +396,9 @@ def find_ote_train(
     output_folder: str,
 ) -> None:
     """
-    Main function to process a FASTQ file or folder of FASTQ files ot find OTEs
-    in the reads.
+    Main function to process a FASTQ file or folder of FASTQ files to find OTEs
+    in the reads. The function is suitable only for testing data where only the OTE
+    sequence is known and the N1N2 cap bases and any bases 3' of them are unknown.
 
     Args:
         input_path (str): The path to the FASTQ file or folder.
@@ -449,11 +423,11 @@ if __name__ == "__main__":
     output_folder = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/2_20230829_randomcap02/a_delete_later_visulizations"  # Replace with your desired folder path
 
     # Define the alignment reference
-    reference = "CCGGACTTATCGCACCACCTATCCATCATCAGTACTGTNNNNNNCCTGGTAACTGGGAC"
+    reference = "CCGGACTTATCGCACCACCTATCCATCATCAGTACTGT"
 
     cap0_pos = (
         38  # position of the first cap base in the reference sequence (0-indexed)
     )
 
     # Call the function to process the FASTQ file or folder
-    find_ote_train(path, reference, cap0_pos, num_processes, output_folder)
+    find_ote_test(path, reference, cap0_pos, num_processes, output_folder)

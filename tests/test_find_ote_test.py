@@ -1,10 +1,10 @@
 import os
 import tempfile
 
-from capfinder.find_ote_train import find_ote_train
+from capfinder.find_ote_test import find_ote_test
 
 
-class TestFindOTETrain:
+class TestFindOTETest:
     # FIND OTE in a record in a single FASTQ file
     def test_find_ote_in_dir_of_fastq_files(self) -> None:
         # Create a temporary directory for the output files
@@ -15,18 +15,18 @@ class TestFindOTETrain:
 
             # Create filepaths for expected outputs
             expected_fq1_output_filepath = os.path.join(
-                temp_dir, "ex_fq1_train_ote_search_results.csv"
+                temp_dir, "ex_fq1_test_ote_search_results.csv"
             )
             expected_fq2_output_filepath = os.path.join(
-                temp_dir, "ex_fq2_train_ote_search_results.csv"
+                temp_dir, "ex_fq2_test_ote_search_results.csv"
             )
 
             # Create filepaths for actual outputs
             actual_fq1_output_filepath = os.path.join(
-                temp_dir, "fq1_train_ote_search_results.csv"
+                temp_dir, "fq1_test_ote_search_results.csv"
             )
             actual_fq2_output_filepath = os.path.join(
-                temp_dir, "fq2_train_ote_search_results.csv"
+                temp_dir, "fq2_test_ote_search_results.csv"
             )
 
             # Create the dummy FASTQ file files
@@ -52,20 +52,22 @@ class TestFindOTETrain:
             # Create the expected output files
             with open(expected_fq1_output_filepath, "w") as efq1:
                 efq1.write(
-                    "read_id,read_type,reason,alignment_score,left_flanking_region_start_fastq_pos,cap0_read_fastq_pos,right_flanking_region_start_fastq_pos,roi_fasta\n"
+                    "read_id,read_type,reason,alignment_score,left_flanking_region_start_fastq_pos,cap_n1_minus_1_read_fastq_pos,right_flanking_region_start_fastq_pos,roi_fasta\n"
                 )
                 efq1.write(
-                    "6245aef5-3525-42c3-8f77-c30615eb6c0b,good,111,50,42,47,53,ATCCTACCTAC\n"
+                    "6245aef5-3525-42c3-8f77-c30615eb6c0b,good,good_alignment_in_cap-flanking_regions,51,33,38,44,ACTATTATTAT\n"
                 )
             with open(expected_fq2_output_filepath, "w") as efq2:
                 efq2.write(
-                    "read_id,read_type,reason,alignment_score,left_flanking_region_start_fastq_pos,cap0_read_fastq_pos,right_flanking_region_start_fastq_pos,roi_fasta\n"
+                    "read_id,read_type,reason,alignment_score,left_flanking_region_start_fastq_pos,cap_n1_minus_1_read_fastq_pos,right_flanking_region_start_fastq_pos,roi_fasta\n"
                 )
-                efq2.write("5e7c2a9e-c97d-4ee6-9695-5e18aad25c39,bad,110,28,,,,\n")
+                efq2.write(
+                    "5e7c2a9e-c97d-4ee6-9695-5e18aad25c39,good,good_alignment_in_cap-flanking_regions,37,47,52,58,CATCTACACCC\n"
+                )
             # Call the function under test
-            find_ote_train(
+            find_ote_test(
                 input_path=temp_dir,
-                reference="CCGGACTTATCGCACCACCTATCCATCATCAGTACTGTNNNNNNCCTGGTAACTGGGAC",
+                reference="CCGGACTTATCGCACCACCTATCCATCATCAGTACTGT",
                 cap0_pos=38,
                 num_processes=1,
                 output_folder=temp_dir,

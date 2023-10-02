@@ -86,7 +86,9 @@ def process_fastq_file(
     # Make output file name
     directory, filename = os.path.split(fastq_filepath)
     filename_no_extension, extension = os.path.splitext(filename)
-    output_filepath = os.path.join(output_folder, f"{filename_no_extension}.txt")
+    output_filepath = os.path.join(
+        output_folder, f"{filename_no_extension}_alignments.txt"
+    )
 
     with file_opener(fastq_filepath) as fastq_file:
         records = list(SeqIO.parse(fastq_file, "fastq"))

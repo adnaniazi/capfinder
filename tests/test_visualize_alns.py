@@ -33,10 +33,10 @@ class TestVisualizeAlns:
             dummy_fastq_filepath = os.path.join(temp_dir, "dummy.fastq")
             # Create an expected dummy ouptput file path
             expected_dummy_output_filepath = os.path.join(
-                temp_dir, "expected_dummy.txt"
+                temp_dir, "expected_dummy_alignments.txt"
             )
             # Create an actual dummy output file path
-            dummy_output_filepath = os.path.join(temp_dir, "dummy.txt")
+            dummy_output_filepath = os.path.join(temp_dir, "dummy_alignments.txt")
 
             # Create a dummy FASTQ file
             with open(dummy_fastq_filepath, "w") as dummy_fastq:
@@ -86,15 +86,19 @@ class TestVisualizeAlns:
 
             # Create an expected dummy ouptput file path
             expected_fq1_output_filepath = os.path.join(
-                temp_dir, "expected_dummy_fq1.txt"
+                temp_dir, "expected_dummy_fq1_alignments.txt"
             )
             expected_fq2_output_filepath = os.path.join(
-                temp_dir, "expected_dummy_fq2.txt"
+                temp_dir, "expected_dummy_fq2_alignments.txt"
             )
 
             # Create an actual dummy output file path
-            actual_result_fq1_filepath = os.path.join(temp_dir, "dummy_fq1.txt")
-            actual_result_fq2_filepath = os.path.join(temp_dir, "dummy_fq2.txt")
+            actual_result_fq1_filepath = os.path.join(
+                temp_dir, "dummy_fq1_alignments.txt"
+            )
+            actual_result_fq2_filepath = os.path.join(
+                temp_dir, "dummy_fq2_alignments.txt"
+            )
 
             # Create first dummy FASTQ file
             with open(dummy_fq1_filepath, "w") as dfq1:
