@@ -186,16 +186,21 @@ def collate_bam_pod5_worker(
     roi_data["end_base_idx_in_fasta"] = end_base_idx_in_fasta
     roi_data["read_id"] = read_id
 
-    # 8. Plot the ROI signal if requested
+    # 8. Find if a read is good or bad
+    read_type = (
+        "bad_reads"
+        if start_base_idx_in_fasta is None and end_base_idx_in_fasta is None
+        else "good_reads"
+    )
+
+    # 9. Save the train/test and metadata information
+    # name: cap01_run1.csv read_id and roi signal data
+
+    # 10. Plot the ROI signal if requested
     # Save plot in directories of 100 plots each separated into
     # good and bad categories. Good reads mean those that have
     # the OTE in them and bad reads mean those that do not.
     if plot_signal:
-        read_type = (
-            "bad_reads"
-            if start_base_idx_in_fasta is None and end_base_idx_in_fasta is None
-            else "good_reads"
-        )
         count_key = f"{read_type}_count"
         dir_key = f"{read_type}_dir"
         with lock:

@@ -50,20 +50,19 @@ class TestFindOTETest:
                 )
 
             # Create the expected output files
+            hdr_str = "read_id,read_type,reason,alignment_score,left_flanking_region_start_fastq_pos,cap_n1_minus_1_read_fastq_pos,right_flanking_region_start_fastq_pos,roi_fasta,fasta_length\n"
             with open(expected_fq1_output_filepath, "w") as efq1:
+                efq1.write(hdr_str)
                 efq1.write(
-                    "read_id,read_type,reason,alignment_score,left_flanking_region_start_fastq_pos,cap_n1_minus_1_read_fastq_pos,right_flanking_region_start_fastq_pos,roi_fasta\n"
+                    "6245aef5-3525-42c3-8f77-c30615eb6c0b,good,good_alignment_in_cap-flanking_regions,51,33,38,44,ACTATTATTAT,93\n"
                 )
-                efq1.write(
-                    "6245aef5-3525-42c3-8f77-c30615eb6c0b,good,good_alignment_in_cap-flanking_regions,51,33,38,44,ACTATTATTAT\n"
-                )
+
             with open(expected_fq2_output_filepath, "w") as efq2:
+                efq2.write(hdr_str)
                 efq2.write(
-                    "read_id,read_type,reason,alignment_score,left_flanking_region_start_fastq_pos,cap_n1_minus_1_read_fastq_pos,right_flanking_region_start_fastq_pos,roi_fasta\n"
+                    "5e7c2a9e-c97d-4ee6-9695-5e18aad25c39,good,good_alignment_in_cap-flanking_regions,37,47,52,58,CATCTACACCC,69\n"
                 )
-                efq2.write(
-                    "5e7c2a9e-c97d-4ee6-9695-5e18aad25c39,good,good_alignment_in_cap-flanking_regions,37,47,52,58,CATCTACACCC\n"
-                )
+
             # Call the function under test
             find_ote_test(
                 input_path=temp_dir,
