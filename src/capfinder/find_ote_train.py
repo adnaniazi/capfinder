@@ -1,7 +1,19 @@
+"""
+The module contains the code to find OTE sequence in training data --
+where we know both the left and right context to the NNNNNN region --
+and its location with high-confidence.
+The modules can process one read at a time or all reads in a FASTQ
+file or folder of FASTQ files.
+
+Author: Adnan M. Niazi
+Date: 2024-02-28
+"""
+
+
 import contextlib
 import csv
 import os
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple
 
 from Bio import SeqIO  # type: ignore
 from mpire import WorkerPool  # type: ignore
@@ -125,9 +137,7 @@ def has_good_aln_ns_flanking_region(
         return True
 
 
-def process_read(
-    record: Any, reference: str, cap0_pos: int
-) -> Dict[str, Union[str, None, float, int]]:
+def process_read(record: Any, reference: str, cap0_pos: int) -> Dict[str, Any]:
     """
     Process a single read from a FASTQ file. The function alnigns the read to the reference,
     and checks if the alignment in the NNNNNN region and the flanking regions is good. If the
@@ -440,13 +450,13 @@ def find_ote_train(
 if __name__ == "__main__":
     # Example usage:
     # Specify the path to the FASTQ file or folder
-    path = "/export/valenfs/data/raw_data/minion/20230829_randomcap02/20230829_randomcap02/20230829_1513_MN29576_FAW09814_0350bac3/fastq_pass/FAW09814_pass_0350bac3_dceb0cf9_0.fastq.gz"  # Replace with your file or folder path
+    path = "/export/valenfs/data/raw_data/minion/20230829_randomcap01/20230829_randomcap01/20230829_1511_MN21607_FAW07137_2af67808"  # Replace with your file or folder path
 
     # Specify the number of processes for parallel processing
     num_processes = 1  # Adjust as needed
 
     # Specify the folder where worker output files will be stored
-    output_folder = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/2_20230829_randomcap02/a_delete_later_visulizations"  # Replace with your desired folder path
+    output_folder = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/3_20230829_randomcap01/visualizations"  # Replace with your desired folder path
 
     # Define the alignment reference
     reference = "CCGGACTTATCGCACCACCTATCCATCATCAGTACTGTNNNNNNCCTGGTAACTGGGAC"

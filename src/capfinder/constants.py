@@ -1,3 +1,9 @@
+"""
+The module contains constants used in the capfinder package.
+
+Author: Adnan M. Niazi
+Date: 2024-02-28
+"""
 CIGAR_CODES = ["M", "I", "D", "N", "S", "H", "P", "=", "X"]
 CODE_TO_OP = {
     "M": 0,

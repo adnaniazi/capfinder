@@ -1,3 +1,16 @@
+"""
+This module helps us to visualize the alignments of reads to a reference sequence.
+The module reads a FASTQ file or folder of FASTQ files,
+processes each read in parallel, and writes the output to a file.
+The output file contains the read ID, average quality, sequence,
+alignment score, and alignment string.
+
+This module is useful in understandig the output of Parasail alignment.
+
+Author: Adnan M. Niazi
+Date: 2024-02-28
+"""
+
 import contextlib
 import os
 from typing import Any, List, Sequence, Union
@@ -84,6 +97,10 @@ def process_fastq_file(
     """
 
     # Make output file name
+    # Make output_folder if it does not exist already
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
     directory, filename = os.path.split(fastq_filepath)
     filename_no_extension, extension = os.path.splitext(filename)
     output_filepath = os.path.join(
@@ -173,13 +190,13 @@ def visualize_alns(
 if __name__ == "__main__":
     # Example usage:
     # Specify the path to the FASTQ file or folder
-    path = "/export/valenfs/data/raw_data/minion/20230829_randomcap02/20230829_randomcap02/20230829_1513_MN29576_FAW09814_0350bac3/fastq_pass/FAW09814_pass_0350bac3_dceb0cf9_0.fastq.gz"  # Replace with your file or folder path
+    path = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/2_20230829_randomcap02/minimap_aligments/attempt1"  # Replace with your file or folder path
 
     # Specify the number of processes for parallel processing
-    num_processes = 4  # Adjust as needed
+    num_processes = 1  # Adjust as needed
 
     # Specify the folder where worker output files will be stored
-    output_folder = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/2_20230829_randomcap02/a_delete_later_visulizations"  # Replace with your desired folder path
+    output_folder = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/2_20230829_randomcap02/minimap_aligments/attempt1"  # Replace with your desired folder path
 
     # Define the alignment reference
     reference = "CCGGACTTATCGCACCACCTATCCATCATCAGTACTGTNNNNNNCCTGGTAACTGGGAC"

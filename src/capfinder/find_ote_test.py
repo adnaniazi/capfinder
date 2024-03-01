@@ -1,7 +1,18 @@
+"""
+The module contains the code to find OTE sequence in test data --
+where we only know the context to the left of the NNNNNN region --
+and its location with high-confidence.
+The modules can process one read at a time or all reads in a FASTQ
+file or folder of FASTQ files.
+
+Author: Adnan M. Niazi
+Date: 2024-02-28
+"""
+
 import contextlib
 import csv
 import os
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple
 
 from Bio import SeqIO  # type: ignore
 from mpire import WorkerPool  # type: ignore
@@ -123,9 +134,7 @@ def has_good_aln_in_5prime_flanking_region(
         return True
 
 
-def process_read(
-    record: Any, reference: str, cap0_pos: int
-) -> Dict[str, Union[str, None, float, int]]:
+def process_read(record: Any, reference: str, cap0_pos: int) -> Dict[str, Any]:
     """
     Process a single read from a FASTQ file. The function alnigns the read to the reference,
     and checks if the alignment in the NNNNNN region and the flanking regions is good. If the
@@ -153,6 +162,8 @@ def process_read(
     """
     # Get alignment
     sequence = str(record.seq)
+    fasta_length = len(sequence)
+
     with contextlib.redirect_stdout(None):
         qry_str, aln_str, ref_str, aln_score = align(
             query_seq=sequence, target_seq=reference, pretty_print_alns=False
@@ -168,6 +179,7 @@ def process_read(
         "cap_n1_minus_1_read_fastq_pos": None,
         "right_flanking_region_start_fastq_pos": None,
         "roi_fasta": None,
+        "fasta_length": fasta_length,
     }
 
     # For low quality alignments, return None
@@ -248,6 +260,7 @@ def process_read(
         "cap_n1_minus_1_read_fastq_pos": cap_n1_minus_1_read_fastq_pos,
         "right_flanking_region_start_fastq_pos": right_flanking_region_start_fastq_pos,
         "roi_fasta": roi_fasta,
+        "fasta_length": fasta_length,
     }
 
     return out_ds_passed
@@ -412,20 +425,17 @@ def find_ote_test(
 if __name__ == "__main__":
     # Example usage:
     # Specify the path to the FASTQ file or folder
-    path = "/export/valenfs/data/raw_data/minion/20230829_randomcap02/20230829_randomcap02/20230829_1513_MN29576_FAW09814_0350bac3/fastq_pass/FAW09814_pass_0350bac3_dceb0cf9_0.fastq.gz"  # Replace with your file or folder path
+    path = "/export/valenfs/data/raw_data/minion/7_20231025_capjump_rna004/20231025_CapJmpCcGFP_RNA004/20231025_1536_MN29576_FAX71885_5b8c42a6"  # Replace with your file or folder path
 
     # Specify the number of processes for parallel processing
-    num_processes = 1  # Adjust as needed
+    num_processes = 100  # Adjust as needed
 
     # Specify the folder where worker output files will be stored
-    output_folder = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/2_20230829_randomcap02/a_delete_later_visulizations"  # Replace with your desired folder path
+    output_folder = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/7_20231025_capjump_rna004/3_processed_output"  # Replace with your desired folder path
 
     # Define the alignment reference
-    reference = "CCGGACTTATCGCACCACCTATCCATCATCAGTACTGT"
-
-    cap0_pos = (
-        38  # position of the first cap base in the reference sequence (0-indexed)
-    )
+    reference = "GAGAUGAGCUUUCGUUCGUCUCCGGACUUAUCGCACCACCUAUCC"
+    cap0_pos = 45
 
     # Call the function to process the FASTQ file or folder
     find_ote_test(path, reference, cap0_pos, num_processes, output_folder)

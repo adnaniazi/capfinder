@@ -86,3 +86,7 @@ venv.bak/
 
 # ignore notebooks folder
 /src/capfinder/notebooks/
+
+.DS_Store
+.DS_Store?
+.DS_Store!

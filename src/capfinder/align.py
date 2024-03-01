@@ -1,3 +1,13 @@
+"""
+The module aligns a reference sequence to a read sequence using Parasail.
+The module also provides functions to generate alignment strings and chunks for
+pretty printing.
+
+
+Author: Adnan M. Niazi
+Date: 2024-02-28
+"""
+
 import re
 from collections import deque
 from dataclasses import dataclass
@@ -174,7 +184,6 @@ def make_alignment_strings(
         target_count = ref_start
         aln_query += "-" * ref_start
         aln += " " * ref_start
-        query_count += query_start
 
     # Handle the middle
     for operation, length in cigar_sam:
@@ -315,7 +324,8 @@ def align(
 
 
 if __name__ == "__main__":
-    query_seq = "CCCTCACCCTACCACACCCCTCCCCTACACATACCTACTCCTACACCCATCTACCCCCACACCCCTAAACAGGGTTATGGTCC"
-    target_seq = "CCGGACTTATCGCACCACCTATCCATCATCAGTACTGT"
+    query_seq = "GAAAGAGATAGAGTTACCATTCTATCATAATTAATATTATCGTCTACAACACCATCCATCCTTCCATCAACTAATTCTACCTTTACTG"
+    target_seq = "CCGGACTTATCGCACCACCTATCCATCATCAGTACTGTNNNNNNCCTGGTAACTGGGAC"
+
     pretty_print_alns = True
     align(query_seq=query_seq, target_seq=target_seq, pretty_print_alns=True)
