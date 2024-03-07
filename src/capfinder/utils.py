@@ -43,3 +43,25 @@ def open_database(
     conn = sqlite3.connect(database_path)
     cursor = conn.cursor()
     return conn, cursor
+
+
+def map_cap_int_to_name(cap_class: int) -> str:
+    """Map the integer representation of the CAP class to the CAP name.
+
+    Args:
+        cap_class (int): Integer representation of the CAP class.
+
+    Returns:
+        cap_name (str): The name of the CAP class.
+    """
+    cap_mapping = {
+        0: "cap_0",
+        1: "cap_1",
+        2: "cap_2",
+        3: "cap_2-1",
+        4: "cap_TMG",
+        5: "cap_NAD",
+        6: "cap_FAD",
+        -99: "cap_unknown",
+    }
+    return cap_mapping[cap_class]

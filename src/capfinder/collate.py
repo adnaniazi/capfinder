@@ -31,7 +31,7 @@ from capfinder.process_pod5 import (
     find_base_locs_in_signal,
     pull_read_from_pod5,
 )
-from capfinder.utils import open_database
+from capfinder.utils import map_cap_int_to_name, open_database
 
 # Create a lock for synchronization
 lock = multiprocessing.Lock()
@@ -66,41 +66,146 @@ class FASTQRecord:
 
 class DatabaseHandler:
     def __init__(
-        self, database_path: str, plots_csv_filepath: Union[str, None]
+        self,
+        cap_class: int,
+        num_processes: int,
+        database_path: str,
+        plots_csv_filepath: Union[str, None],
+        output_dir: str,
     ) -> None:
-        """Initializes the database handler"""
+        """Initializes the index database handler"""
+        self.cap_class = cap_class
         self.database_path = database_path
         self.plots_csv_filepath = plots_csv_filepath
+        self.num_processes = num_processes
+        self.output_dir = output_dir
+
+        # Open the plots CSV file in append mode
         if self.plots_csv_filepath:
             self.csvfile = open(self.plots_csv_filepath, "a", newline="")
 
-    def init_func(self, worker_state: Dict[str, Any]) -> None:
-        """Initializes the database connection for each worker."""
+    def init_func(self, worker_id: int, worker_state: Dict[str, Any]) -> None:
+        """Opens the database connection and CSV files"""
+
+        # 1. Open the database connection and cursor
         worker_state["db_connection"], worker_state["db_cursor"] = open_database(
             self.database_path
         )
-        # Write the header row to the CSV file
+
+        # 2. Write the header row to the plots CSV file
         if self.plots_csv_filepath:
             csv_writer = csv.writer(self.csvfile)
             csv_writer.writerow(["read_id", "plot_filepath"])
             worker_state["csv_writer"] = csv_writer
             worker_state["csvfile"] = self.csvfile  # Store csvfile in worker_state
 
-    def exit_func(self, worker_state: Dict[str, Any]) -> None:
+        # Define paths to data and metadata CSV files
+        data_file_path = os.path.join(self.output_dir, f"data_tmp_{worker_id}.csv")
+        metadata_file_path = os.path.join(
+            self.output_dir, f"metadata_tmp_{worker_id}.csv"
+        )
+
+        # 3. Open data_file_path in append mode and write the header row if the file is empty
+        data_file = open(data_file_path, "a", newline="")
+        data_writer = csv.writer(data_file)
+        if data_file.tell() == 0:  # Check if the file is empty
+            data_writer.writerow(
+                ["read_id", "cap_class", "timeseries"]
+            )  # Replace with your actual header
+
+        # Save the data file path and writer to worker_state
+        worker_state["data_file"] = data_file
+        worker_state["data_writer"] = data_writer
+
+        # 4. Open metadata_file_path in append mode and write the header row if the file is empty
+        metadata_file = open(metadata_file_path, "a", newline="")
+        metadata_writer = csv.writer(metadata_file)
+        if metadata_file.tell() == 0:  # Check if the file is empty
+            metadata_writer.writerow(
+                [
+                    "read_id",
+                    "parent_read_id",
+                    "pod5_file",
+                    "read_type",
+                    "roi_fasta",
+                    "roi_start",
+                    "roi_end",
+                    "fasta_length",
+                    "fasta",
+                ]
+            )  # Replace with your actual header
+
+        # Save the metadata file path and writer to worker_state
+        worker_state["metadata_file"] = metadata_file
+        worker_state["metadata_writer"] = metadata_writer
+
+    def exit_func(self, worker_id: int, worker_state: Dict[str, Any]) -> None:
         """Closes the database connection and the CSV file."""
         conn = worker_state.get("db_connection")
         if conn:
             conn.close()
 
+        # Close the plots csv file
         csvfile = worker_state.get("csvfile")
         if self.plots_csv_filepath and csvfile:
             csvfile.close()
 
+        # Close the data file
+        worker_state["data_file"].close()
+
+        # Close the metadata file
+        worker_state["metadata_file"].close()
+
+    def merge_data(self) -> None:
+        """Merges the data and metadata CSV files."""
+        self._merge_csv_files(data_or_metadata="data")
+        self._merge_csv_files(data_or_metadata="metadata")
+
+    def _merge_csv_files(self, data_or_metadata: str) -> None:
+        """Merges the data and metadata CSV files.
+
+        Args:
+            data_or_metadata (str): Whether to merge data or metadata CSV files.
+
+        Returns:
+            None
+        """
+        cap_name = map_cap_int_to_name(self.cap_class)
+        data_path = os.path.join(self.output_dir, f"{data_or_metadata}__{cap_name}.csv")
+        # delete if the file already exists
+        if os.path.exists(data_path):
+            logger.info(f"Overwriting existing {data_or_metadata} CSV file.")
+            os.remove(data_path)
+        with open(data_path, "w", newline="") as output_csv:
+            writer = csv.writer(output_csv)
+            for i in range(self.num_processes):
+                ind_csv_file = os.path.join(
+                    self.output_dir, f"{data_or_metadata}_tmp_{i}.csv"
+                )
+                # Open each CSV file and read its contents
+                with open(ind_csv_file) as input_csv:
+                    reader = csv.reader(input_csv)
+
+                    # If it's the first file, write the header to the output file
+                    if i == 0:
+                        header = next(reader)
+                        writer.writerow(header)
+                    else:
+                        next(reader)
+
+                    # Write the remaining rows to the output file
+                    for row in reader:
+                        writer.writerow(row)
+                os.remove(ind_csv_file)
+        logger.info(f"Successfully merged {data_or_metadata} CSV file.")
+
 
 def collate_bam_pod5_worker(
+    worker_id: int,
     worker_state: Dict[str, Any],
     bam_data: Dict[str, Any],
     reference: str,
+    cap_class: int,
     cap0_pos: int,
     train_or_test: str,
     plot_signal: bool,
@@ -110,12 +215,16 @@ def collate_bam_pod5_worker(
     FASTA coordinates of  region of interest (ROI) and and extracts its signal.
 
     Params:
+        worker_id: int
+            Worker ID.
         worker_state: dict
             Dictionary containing the database connection and cursor.
         bam_data: dict
             Dictionary containing the BAM record information.
         reference: str
             Reference sequence.
+        cap_class: int
+            Class label for the RNA cap
         cap0_pos: int
             Position of the cap0 base in the reference sequence.
         train_or_test: str
@@ -194,7 +303,25 @@ def collate_bam_pod5_worker(
     )
 
     # 9. Save the train/test and metadata information
-    # name: cap01_run1.csv read_id and roi signal data
+    # We need to store train/test data only for the good reads
+    if read_type == "good_reads":
+        worker_state["data_writer"].writerow(
+            [read_id, cap_class, roi_data["roi_signal"]]
+        )  # Replace with your actual header
+    # We need to store metadata for all reads (good and bad)
+    worker_state["metadata_writer"].writerow(
+        [
+            read_id,
+            parent_read_id,
+            pod5_filepath,
+            read_type.rstrip("s"),
+            roi_data["roi_fasta"],
+            roi_data["start_base_idx_in_fasta"],
+            roi_data["end_base_idx_in_fasta"],
+            len(read_fasta),
+            read_fasta,
+        ]
+    )
 
     # 10. Plot the ROI signal if requested
     # Save plot in directories of 100 plots each separated into
@@ -246,6 +373,7 @@ def collate_bam_pod5_worker(
             chunked_aln_str,
             alignment_score,
         )
+
     return None
 
 
@@ -254,6 +382,7 @@ def collate_bam_pod5(
     pod5_dir: str,
     num_processes: int,
     reference: str,
+    cap_class: int,
     cap0_pos: int,
     train_or_test: str,
     plot_signal: bool,
@@ -261,9 +390,9 @@ def collate_bam_pod5(
 ) -> None:
     # 1. Initial configuration
     configure_logger(output_dir)
-    logger.info("Computing bam total records")
+    logger.info("Computing BAM total records!")
     num_bam_records = get_total_records(bam_filepath)
-    logger.info(f"Found {num_bam_records}.")
+    logger.info(f"Found {num_bam_records} BAM records.")
 
     # 2. Make index database if it does not exist
     database_path = os.path.join(output_dir, "database.db")
@@ -284,7 +413,9 @@ def collate_bam_pod5(
         plots_csv_filepath = os.path.join(output_dir, "plots", "plotpaths.csv")
 
     # 4. Initialize the database handler
-    db_handler = DatabaseHandler(database_path, plots_csv_filepath)
+    db_handler = DatabaseHandler(
+        cap_class, num_processes, database_path, plots_csv_filepath, output_dir
+    )
 
     # 5. Set the signal handler for SIGINT
     # This is useful when the use presses Ctrl+C to stop the program.
@@ -301,13 +432,17 @@ def collate_bam_pod5(
 
     # 6. Process the BAM file row-by-row using multiple processes
     try:
-        with WorkerPool(n_jobs=num_processes, use_worker_state=True) as pool:
+        logger.info("Prcessing BAM file using multiple processes!")
+        with WorkerPool(
+            n_jobs=num_processes, use_worker_state=True, pass_worker_id=True
+        ) as pool:
             pool.map(
                 collate_bam_pod5_worker,
                 [
                     (
                         bam_data,
                         reference,
+                        cap_class,
                         cap0_pos,
                         train_or_test,
                         plot_signal,
@@ -330,25 +465,53 @@ def collate_bam_pod5(
             csvfile = db_handler.csvfile
             if csvfile:
                 csvfile.close()
+
+        # Merge the data and metadata CSV files
+        db_handler.merge_data()
+        logger.success("All steps fininshed successfully!")
     return None
 
 
 if __name__ == "__main__":
-    bam_filepath = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/8_20231114_randomCAP1v3_rna004/1_basecall/sorted.calls.bam"
+    bam_filepath = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/8_20231114_randomCAP1v3_rna004/1_basecall_subset/sorted.calls.bam"
     pod5_dir = "/export/valenfs/data/raw_data/minion/20231114_randomCAP1v3_rna004"
-    num_processes = 120
+    num_processes = 3
     reference = "GCTTTCGTTCGTCTCCGGACTTATCGCACCACCTATCCATCATCAGTACTGT"
     cap0_pos = 52
     train_or_test = "test"
-    output_dir = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/8_20231114_randomCAP1v3_rna004/test_OTE_vizs6"
+    output_dir = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/8_20231114_randomCAP1v3_rna004/test_OTE_vizs19"
     plot_signal = True
+    cap_class = 1
     collate_bam_pod5(
         bam_filepath,
         pod5_dir,
         num_processes,
         reference,
+        cap_class,
         cap0_pos,
         train_or_test,
         plot_signal,
         output_dir,
     )
+
+    # bam_filepath = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data_old/7_20231025_capjump_rna004/2_alignment/1_basecalled/sorted.calls.bam"
+    # #bam_filepath = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/7_20231025_capjump_rna004/1_basecall_subset/sorted.calls.bam"
+    # pod5_dir = "/export/valenfs/data/raw_data/minion/7_20231025_capjump_rna004/20231025_CapJmpCcGFP_RNA004/20231025_1536_MN29576_FAX71885_5b8c42a6"
+    # num_processes = 120
+    # reference = "TTCGTCTCCGGACTTATCGCACCACCTATCCATCA"
+    # cap0_pos = 49 # 59
+    # train_or_test = "test"
+    # output_dir = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/7_20231025_capjump_rna004/output_full"
+    # plot_signal = True
+    # cap_class = 1
+    # collate_bam_pod5(
+    #     bam_filepath,
+    #     pod5_dir,
+    #     num_processes,
+    #     reference,
+    #     cap_class,
+    #     cap0_pos,
+    #     train_or_test,
+    #     plot_signal,
+    #     output_dir,
+    # )

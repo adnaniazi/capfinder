@@ -7,20 +7,37 @@ Date: 2024-02-28
 
 import os
 from datetime import datetime
+from importlib.metadata import version
+from typing import Any
 
-import toml
 from loguru import logger as base_logger
 
-with open("pyproject.toml", encoding="utf-8") as file:
-    app_version = toml.load(file)["tool"]["poetry"]["version"]
+
+def get_version() -> Any:
+    """Get the version of the app from pyproject.toml.
+
+    Returns:
+        app_version (Any): Version of the app.
+    """
+    app_version = version("capfinder")
+    return app_version
+
 
 # Configure the base logger
 logger = base_logger
+# Default log directory
+log_directory = "."
 
-log_directory = "/Home/ii/adnann/capfinder_logs/"  # Default log directory
 
+def configure_logger(new_log_directory: str = "") -> str:
+    """Configure the logger to log to a file in the specified directory.
 
-def configure_logger(new_log_directory: str = "") -> None:
+    Args:
+        new_log_directory (str): The directory to save the log file in. Defaults to the current directory.
+
+    Returns:
+        log_filepath (str): The path to the log file.
+    """
     global log_directory
     log_directory = new_log_directory if new_log_directory else log_directory
 
@@ -32,6 +49,7 @@ def configure_logger(new_log_directory: str = "") -> None:
     # Get current date and time
     now = datetime.now()
     timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
+    app_version = get_version()
 
     # Use the timestamp in the log file name
     log_filename = f"capfinder_v{app_version}_{timestamp}.log"
@@ -39,8 +57,8 @@ def configure_logger(new_log_directory: str = "") -> None:
     log_filepath = os.path.join(log_directory, log_filename)
 
     # Configure logger to log to the file
-    # No need to call logger.remove() as we want to keep the default stderr handler
     logger.add(log_filepath, format="{time} {level} {message}")
 
     # Now logs will be sent to both the terminal and log_filename
-    logger.info(f"Started CAPFINDER v{app_version}!")
+    logger.opt(depth=1).info(f"Started CAPFINDER v{app_version}!")
+    return log_filepath
