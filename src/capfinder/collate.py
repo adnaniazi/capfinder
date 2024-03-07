@@ -501,7 +501,7 @@ if __name__ == "__main__":
     reference = "TTCGTCTCCGGACTTATCGCACCACCTATCCATCA"
     cap0_pos = 49  # 59
     train_or_test = "test"
-    output_dir = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/7_20231025_capjump_rna004/output_full"
+    output_dir = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/7_20231025_capjump_rna004/output_full2"
     plot_signal = True
     cap_class = 1
     collate_bam_pod5(
