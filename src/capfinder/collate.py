@@ -390,9 +390,9 @@ def collate_bam_pod5(
 ) -> None:
     # 1. Initial configuration
     configure_logger(output_dir)
-    logger.info("Computing BAM total records!")
+    logger.info("Computing BAM total records...")
     num_bam_records = get_total_records(bam_filepath)
-    logger.info(f"Found {num_bam_records} BAM records.")
+    logger.info(f"Found {num_bam_records} BAM records!")
 
     # 2. Make index database if it does not exist
     database_path = os.path.join(output_dir, "database.db")
@@ -432,7 +432,7 @@ def collate_bam_pod5(
 
     # 6. Process the BAM file row-by-row using multiple processes
     try:
-        logger.info("Prcessing BAM file using multiple processes!")
+        logger.info("Processing BAM file using multiple processes...")
         with WorkerPool(
             n_jobs=num_processes, use_worker_state=True, pass_worker_id=True
         ) as pool:
@@ -473,35 +473,13 @@ def collate_bam_pod5(
 
 
 if __name__ == "__main__":
-    bam_filepath = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/8_20231114_randomCAP1v3_rna004/1_basecall_subset/sorted.calls.bam"
-    pod5_dir = "/export/valenfs/data/raw_data/minion/20231114_randomCAP1v3_rna004"
-    num_processes = 3
-    reference = "GCTTTCGTTCGTCTCCGGACTTATCGCACCACCTATCCATCATCAGTACTGT"
-    cap0_pos = 52
-    train_or_test = "test"
-    output_dir = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/8_20231114_randomCAP1v3_rna004/test_OTE_vizs19"
-    plot_signal = True
-    cap_class = 1
-    collate_bam_pod5(
-        bam_filepath,
-        pod5_dir,
-        num_processes,
-        reference,
-        cap_class,
-        cap0_pos,
-        train_or_test,
-        plot_signal,
-        output_dir,
-    )
-
-    # bam_filepath = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data_old/7_20231025_capjump_rna004/2_alignment/1_basecalled/sorted.calls.bam"
-    # #bam_filepath = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/7_20231025_capjump_rna004/1_basecall_subset/sorted.calls.bam"
-    # pod5_dir = "/export/valenfs/data/raw_data/minion/7_20231025_capjump_rna004/20231025_CapJmpCcGFP_RNA004/20231025_1536_MN29576_FAX71885_5b8c42a6"
-    # num_processes = 120
-    # reference = "TTCGTCTCCGGACTTATCGCACCACCTATCCATCA"
-    # cap0_pos = 49 # 59
+    # bam_filepath = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/8_20231114_randomCAP1v3_rna004/1_basecall_subset/sorted.calls.bam"
+    # pod5_dir = "/export/valenfs/data/raw_data/minion/20231114_randomCAP1v3_rna004"
+    # num_processes = 3
+    # reference = "GCTTTCGTTCGTCTCCGGACTTATCGCACCACCTATCCATCATCAGTACTGT"
+    # cap0_pos = 52
     # train_or_test = "test"
-    # output_dir = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/7_20231025_capjump_rna004/output_full"
+    # output_dir = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/8_20231114_randomCAP1v3_rna004/test_OTE_vizs19"
     # plot_signal = True
     # cap_class = 1
     # collate_bam_pod5(
@@ -515,3 +493,25 @@ if __name__ == "__main__":
     #     plot_signal,
     #     output_dir,
     # )
+
+    bam_filepath = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data_old/7_20231025_capjump_rna004/2_alignment/1_basecalled/sorted.calls.bam"
+    # bam_filepath = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/7_20231025_capjump_rna004/1_basecall_subset/sorted.calls.bam"
+    pod5_dir = "/export/valenfs/data/raw_data/minion/7_20231025_capjump_rna004/20231025_CapJmpCcGFP_RNA004/20231025_1536_MN29576_FAX71885_5b8c42a6"
+    num_processes = 120
+    reference = "TTCGTCTCCGGACTTATCGCACCACCTATCCATCA"
+    cap0_pos = 49  # 59
+    train_or_test = "test"
+    output_dir = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/7_20231025_capjump_rna004/output_full"
+    plot_signal = True
+    cap_class = 1
+    collate_bam_pod5(
+        bam_filepath,
+        pod5_dir,
+        num_processes,
+        reference,
+        cap_class,
+        cap0_pos,
+        train_or_test,
+        plot_signal,
+        output_dir,
+    )
