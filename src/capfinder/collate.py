@@ -33,6 +33,8 @@ from capfinder.process_pod5 import (
 )
 from capfinder.utils import map_cap_int_to_name, open_database
 
+csv.field_size_limit(4096 * 4096)  # Set a higher field size limit (e.g., 1MB)
+
 # Create a lock for synchronization
 lock = multiprocessing.Lock()
 
@@ -261,6 +263,12 @@ def collate_bam_pod5_worker(
     # 5. Get alignment of OTE with the read
     # Simulate a FASTQ record object
     read_fasta = bam_data["read_fasta"]
+
+    # Check that the read is not empty
+    if read_fasta is None:
+        logger.warning(f"Read {read_id} has empty FASTA. Skipping the read.")
+        return None
+
     fastq_record = FASTQRecord(read_id, read_fasta)
     if train_or_test.lower() == "train":
         aln_res = extract_roi_coords_train(
@@ -309,6 +317,12 @@ def collate_bam_pod5_worker(
             [read_id, cap_class, roi_data["roi_signal"]]
         )  # Replace with your actual header
     # We need to store metadata for all reads (good and bad)
+
+    if read_fasta is not None:
+        read_length = len(read_fasta)
+    else:
+        read_length = 0
+
     worker_state["metadata_writer"].writerow(
         [
             read_id,
@@ -318,7 +332,7 @@ def collate_bam_pod5_worker(
             roi_data["roi_fasta"],
             roi_data["start_base_idx_in_fasta"],
             roi_data["end_base_idx_in_fasta"],
-            len(read_fasta),
+            read_length,
             read_fasta,
         ]
     )
@@ -498,10 +512,10 @@ if __name__ == "__main__":
     # bam_filepath = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/7_20231025_capjump_rna004/1_basecall_subset/sorted.calls.bam"
     pod5_dir = "/export/valenfs/data/raw_data/minion/7_20231025_capjump_rna004/20231025_CapJmpCcGFP_RNA004/20231025_1536_MN29576_FAX71885_5b8c42a6"
     num_processes = 120
-    reference = "TTCGTCTCCGGACTTATCGCACCACCTATCCATCA"
-    cap0_pos = 49  # 59
+    reference = "TTCGTCTCCGGACTTATCGCACCACCTAT"
+    cap0_pos = 43  # 59
     train_or_test = "test"
-    output_dir = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/7_20231025_capjump_rna004/output_full2"
+    output_dir = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/7_20231025_capjump_rna004/output_full12"
     plot_signal = True
     cap_class = 1
     collate_bam_pod5(
