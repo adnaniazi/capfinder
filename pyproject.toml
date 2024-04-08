@@ -30,7 +30,6 @@ packages = [
 [tool.poetry.dependencies]
 python = ">=3.9, <3.10"
 click = "*"
-pod5 = "*"
 pysam = "^0.21.0"
 parasail = "^1.3.4"
 biopython = "^1.81"
@@ -44,6 +43,7 @@ toml = "^0.10.2"
 types-pkg-resources = "^0.1.3"
 types-toml = "^0.10.8.7"
 types-tqdm = "^4.66.0.20240106"
+pod5 = "^0.3.10"
 
 [tool.poetry.dev-dependencies]
 autoflake = "*"
@@ -113,3 +113,5 @@ show_error_codes = true
 #command1 = "package:module1:function1"
 #command2 = "package:module2:function2"
 #command3 = "package:module3:function3"
+
+[tool.setuptools_scm]
