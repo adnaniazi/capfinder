@@ -14,8 +14,8 @@ import csv
 import os
 from typing import Any, Dict, List, Tuple
 
-from Bio import SeqIO  # type: ignore
-from mpire import WorkerPool  # type: ignore
+from Bio import SeqIO
+from mpire import WorkerPool
 
 from capfinder.align import align
 from capfinder.utils import file_opener

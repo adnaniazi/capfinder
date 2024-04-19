@@ -10,7 +10,7 @@ from typing import Any, Dict, Union
 
 import numpy as np
 import numpy.typing as npt
-import pod5 as p5  # type: ignore
+import pod5 as p5
 
 
 def pull_read_from_pod5(read_id: str, pod5_filepath: str) -> Dict[str, Any]:
@@ -184,9 +184,9 @@ def extract_roi_signal(
         Dict[str, Union[str, npt.NDArray[np.float64], int, float, bytes, Any]]: Dictionary containing the ROI signal and fasta sequence.
     """
     signal = preprocess_signal_data(signal)
-    roi_data: Dict[
-        str, Union[str, npt.NDArray[np.float64], int, float, bytes, Any]
-    ] = {}
+    roi_data: Dict[str, Union[str, npt.NDArray[np.float64], int, float, bytes, Any]] = (
+        {}
+    )
     roi_data["roi_fasta"] = None
     roi_data["roi_signal"] = np.array([], dtype=np.float64)
     roi_data["signal_start"] = None

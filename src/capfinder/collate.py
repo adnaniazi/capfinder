@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, Union
 
 from loguru import logger
-from mpire import WorkerPool  # type: ignore
+from mpire import WorkerPool
 
 from capfinder.align import align
 from capfinder.bam import get_total_records, process_bam_records

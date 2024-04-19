@@ -4,6 +4,7 @@ The module contains some common utility functions used in the capfinder package.
 Author: Adnan M. Niazi
 Date: 2024-02-28
 """
+
 import gzip
 import sqlite3
 from typing import IO, Tuple, Union

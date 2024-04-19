@@ -13,7 +13,7 @@ from collections import deque
 from dataclasses import dataclass
 from typing import Any, List, Tuple
 
-import parasail  # type: ignore
+import parasail
 
 from capfinder.constants import CIGAR_CODES, CODE_TO_OP, OP_TO_CODE
 
