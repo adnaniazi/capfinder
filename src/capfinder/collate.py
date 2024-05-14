@@ -315,7 +315,7 @@ def collate_bam_pod5_worker(
     if read_type == "good_reads":
         worker_state["data_writer"].writerow(
             [read_id, cap_class, roi_data["roi_signal"]]
-        )  # Replace with your actual header
+        )
     # We need to store metadata for all reads (good and bad)
 
     if read_fasta is not None:

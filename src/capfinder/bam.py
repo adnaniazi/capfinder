@@ -92,8 +92,8 @@ def get_signal_info(record: pysam.AlignedSegment) -> Dict[str, Any]:
     signal_info["signal_sd"] = tags_dict["sd"]
     signal_info["is_qcfail"] = record.is_qcfail
     signal_info["is_reverse"] = record.is_reverse
-    signal_info["is_forward"] = record.is_forward  # type: ignore
-    signal_info["is_mapped"] = record.is_mapped  # type: ignore
+    signal_info["is_forward"] = record.is_forward
+    signal_info["is_mapped"] = record.is_mapped
     signal_info["is_supplementary"] = record.is_supplementary
     signal_info["is_secondary"] = record.is_secondary
     signal_info["read_quality"] = record.qual  # type: ignore

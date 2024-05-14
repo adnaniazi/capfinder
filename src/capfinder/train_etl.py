@@ -1,10 +1,11 @@
 import hashlib
 import os
-from typing import Any, List, Tuple
+from typing import Any, List, Tuple, Union, cast
 
 import numpy as np
 import polars as pl
 from dask.distributed import LocalCluster
+from loguru import logger
 from polars import DataFrame
 from prefect import flow, task
 from prefect.engine import PrefectFuture, TaskRunContext
@@ -12,18 +13,36 @@ from prefect.tasks import task_input_hash
 from prefect_dask.task_runners import DaskTaskRunner
 from typing_extensions import Literal
 
+# Define custom types
+TrainData = Tuple[
+    np.ndarray,  # x_train
+    np.ndarray,  # y_train
+    pl.Series,  # read_id_train
+    np.ndarray,  # x_val
+    np.ndarray,  # y_val
+    pl.Series,  # read_id_val
+    np.ndarray,  # x_test
+    np.ndarray,  # y_test
+    pl.Series,  # read_id_test
+]
+DtypeLiteral = Literal["float16", "float32", "float64"]
+DtypeNumpy = Union[np.float16, np.float32, np.float64]
+
 
 def custom_hash(context: TaskRunContext, parameters: dict[str, Any]) -> str:
-    folder_path = parameters.get("folder_path")
-    files = os.listdir(folder_path)
+    data_dir = parameters.get("data_dir")
+    dtype = parameters.get("dtype")
+
+    files = os.listdir(data_dir)
     # Sort files to ensure consistent hash
     files.sort()
     # Generate hash based on file names, sizes, and modification times
     file_metadata = [
         (
             file,
-            os.path.getsize(os.path.join(folder_path, file)),  # type: ignore
-            os.path.getmtime(os.path.join(folder_path, file)),  # type: ignore
+            dtype,
+            os.path.getsize(os.path.join(data_dir, file)),  # type: ignore
+            os.path.getmtime(os.path.join(data_dir, file)),  # type: ignore
         )
         for file in files
     ]
@@ -199,7 +218,7 @@ def zero_pad_and_reshape(
 
 @task(name="make-x-y-read-id-sets", cache_key_fn=task_input_hash)
 def make_x_y_read_id_sets(
-    dataset: pl.DataFrame, target_length: int = 500
+    dataset: pl.DataFrame, target_length: int, dtype_n: DtypeNumpy
 ) -> Tuple[np.ndarray, np.ndarray, pl.Series]:
     """
     Extract the features, labels, and read IDs from a Polars DataFrame.
@@ -208,13 +227,16 @@ def make_x_y_read_id_sets(
     ----------
         dataset (pl.DataFrame): The input Polars DataFrame containing the data.
         target_length (int): The desired length of each time series.
-
+        dtype_n (np.floating): The data type to use for the features.
     Returns
     -------
         Tuple[np.ndarray, np.ndarray, pl.Series]: A tuple containing the features, labels, and read IDs.
     """
     x = zero_pad_and_reshape(dataset, "timeseries", target_length)
-    y = dataset["cap_class"].to_numpy()
+    x = x.astype(dtype_n)
+    y = (
+        dataset["cap_class"].to_numpy().astype(np.int8)
+    )  # Casting to np.int8 for fast training
     read_id = dataset["read_id"]
     return x, y, read_id
 
@@ -224,42 +246,45 @@ def make_x_y_read_id_sets(
 # to save the result to memory.
 # https://github.com/PrefectHQ/prefect/issues/7288
 @task(name="pipeline-task", cache_key_fn=custom_hash)
-def pipeline_task(
-    folder_path: str,
-) -> Tuple[
-    np.ndarray,
-    np.ndarray,
-    pl.Series,
-    np.ndarray,
-    np.ndarray,
-    pl.Series,
-    np.ndarray,
-    np.ndarray,
-    pl.Series,
-]:
+def pipeline_task(data_dir: str, target_length: int, dtype_n: DtypeNumpy) -> TrainData:
     """Pipeline task to load and concatenate CSV files.
 
     Parameters
     ----------
-    folder_path: str
-        Path to the folder containing CSV files.
+    data_dir: str
+        Path to the directory containing CSV files.
+
+    target_length: int
+        The desired length of each time series.
+
+    dtype_n: np.floating
+        The data type to use for the features.
 
     Returns
     -------
-    Tuple[np.ndarray, np.ndarray, pl.Series, np.ndarray, np.ndarray, pl.Series, np.ndarray, np.ndarray, pl.Series]
-        x_train, y_train, read_id_train, x_val, y_val, read_id_val, x_test, y_test, read_id_test
-
+    TrainData
+        A tuple containing the training, validation, and test data sets:
+            - x_train: Training features (numpy array)
+            - y_train: Training target labels (numpy array)
+            - read_id_train: Training data IDs (polars Series)
+            - x_val: Validation features (numpy array)
+            - y_val: Validation target labels (numpy array)
+            - read_id_val: Validation data IDs (polars Series)
+            - x_test: Test features (numpy array)
+            - y_test: Test target labels (numpy array)
+            - read_id_test: Test data IDs (polars Series)
     """
-    csv_files = list_csv_files(folder_path)
+    csv_files = list_csv_files(data_dir)
     loaded_dataframes = [load_csv.submit(file_path) for file_path in csv_files]
     concatenated_df = concatenate_dataframes(loaded_dataframes)
     train, val, test = make_train_val_test_split(
         concatenated_df, train_frac=0.6, val_frac=0.2, test_frac=0.2, random_seed=42
     )
-    target_length = 1000
-    x_train, y_train, read_id_train = make_x_y_read_id_sets(train, target_length)
-    x_val, y_val, read_id_val = make_x_y_read_id_sets(val, target_length)
-    x_test, y_test, read_id_test = make_x_y_read_id_sets(test, target_length)
+    x_train, y_train, read_id_train = make_x_y_read_id_sets(
+        train, target_length, dtype_n
+    )
+    x_val, y_val, read_id_val = make_x_y_read_id_sets(val, target_length, dtype_n)
+    x_test, y_test, read_id_test = make_x_y_read_id_sets(test, target_length, dtype_n)
     return (
         x_train,
         y_train,
@@ -275,31 +300,41 @@ def pipeline_task(
 
 # Calling the pipeline in flow such that we can choose the
 # number of workers to use in the Dask cluster.
-def training_data_pipeline(folder_path: str, n_workers: int) -> Tuple[
-    np.ndarray,
-    np.ndarray,
-    pl.Series,
-    np.ndarray,
-    np.ndarray,
-    pl.Series,
-    np.ndarray,
-    np.ndarray,
-    pl.Series,
-]:
+def train_etl(
+    data_dir: str,
+    target_length: int,
+    dtype: DtypeLiteral,
+    n_workers: int,
+) -> TrainData:
     """Create a Prefect flow for loading and concatenating CSV files.
 
     Parameters
     ----------
-    folder_path: str
-        Path to the folder containing CSV files.
+    data_dir: str
+        Path to the directory containing CSV files.
+
+    target_length: int
+        The desired length of each time series.
+
+    dtype: Literal["float16", "float32", "float64"]
+        The data type to use for the features.
 
     n_workers: int
         Number of workers to use in the Dask cluster.
 
     Returns
     -------
-    Tuple[np.ndarray, np.ndarray, pl.Series, np.ndarray, np.ndarray, pl.Series, np.ndarray, np.ndarray, pl.Series]
-        x_train, y_train, read_id_train, x_val, y_val, read_id_val, x_test, y_test, read_id_test
+    TrainData
+        A tuple containing the training, validation, and test data sets:
+            - x_train: Training features (numpy array)
+            - y_train: Training target labels (numpy array)
+            - read_id_train: Training data IDs (polars Series)
+            - x_val: Validation features (numpy array)
+            - y_val: Validation target labels (numpy array)
+            - read_id_val: Validation data IDs (polars Series)
+            - x_test: Test features (numpy array)
+            - y_test: Test target labels (numpy array)
+            - read_id_test: Test data IDs (polars Series)
     """
 
     @flow(
@@ -309,29 +344,38 @@ def training_data_pipeline(folder_path: str, n_workers: int) -> Tuple[
             cluster_kwargs={"n_workers": n_workers, "threads_per_worker": 2},
         ),
     )
-    def create_df(
-        folder_path: str,
-    ) -> Tuple[
-        np.ndarray,
-        np.ndarray,
-        pl.Series,
-        np.ndarray,
-        np.ndarray,
-        pl.Series,
-        np.ndarray,
-        np.ndarray,
-        pl.Series,
-    ]:
-        return pipeline_task(folder_path)
+    def create_datasets(
+        data_dir: str,
+        target_length: int,
+        dtype: DtypeLiteral,
+    ) -> TrainData:
+        valid_dtypes = {
+            "float16": np.float16,
+            "float32": np.float32,
+            "float64": np.float64,
+        }
 
-    return create_df(folder_path)
+        dt = cast(np.floating, valid_dtypes.get(dtype, np.float32))
+
+        if dtype not in valid_dtypes:
+            logger.warning(
+                """You provided an invalid dtype. Using "float32" as default."""
+            )
+
+        return pipeline_task(data_dir, target_length, dtype_n=dt)
+
+    # -----------------------------------------
+    return create_datasets(data_dir, target_length, dtype)
 
 
 if __name__ == "__main__":
-    folder_path = (
-        "/export/valenfs/data/processed_data/MinION/9_madcap/dummy_data/real_data/"
+    data_dir = (
+        "/export/valenfs/data/processed_data/MinION/9_madcap/dummy_data/real_data2/"
     )
+    target_length = 500
+    dtype: DtypeLiteral = "float16"
     n_workers = 10
+
     (
         x_train,
         y_train,
@@ -342,5 +386,6 @@ if __name__ == "__main__":
         x_test,
         y_test,
         read_id_test,
-    ) = training_data_pipeline(folder_path, n_workers)
+    ) = train_etl(data_dir, target_length, dtype, n_workers)
     print(x_train.shape, x_test.shape)
+    print(x_train.dtype)
