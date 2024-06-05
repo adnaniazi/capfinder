@@ -312,6 +312,7 @@ def collate_bam_pod5_worker(
 
     # 9. Save the train/test and metadata information
     # We need to store train/test data only for the good reads
+    # TODO: make sure that the ROI signal array is not empty example: c4e4c483-1c19-4812-909e-0f7dbd3c8921,1,[]
     if read_type == "good_reads":
         worker_state["data_writer"].writerow(
             [read_id, cap_class, roi_data["roi_signal"]]

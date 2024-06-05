@@ -7,7 +7,10 @@ Date: 2024-02-28
 
 import gzip
 import sqlite3
-from typing import IO, Tuple, Union
+from typing import IO, Tuple, Type, Union, cast
+
+import numpy as np
+from loguru import logger
 
 
 def file_opener(filename: str) -> Union[IO[str], IO[bytes]]:
@@ -66,3 +69,30 @@ def map_cap_int_to_name(cap_class: int) -> str:
         -99: "cap_unknown",
     }
     return cap_mapping[cap_class]
+
+
+def get_dtype(dtype: str) -> Type[np.floating]:
+    """
+    Returns the numpy floating type corresponding to the provided dtype string.
+
+    If the provided dtype string is not valid, a warning is logged and np.float32 is returned as default.
+
+    Parameters:
+    dtype (str): The dtype string to convert to a numpy floating type.
+
+    Returns:
+    Type[np.floating]: The corresponding numpy floating type.
+    """
+    valid_dtypes = {
+        "float16": np.float16,
+        "float32": np.float32,
+        "float64": np.float64,
+    }
+
+    if dtype in valid_dtypes:
+        dt = valid_dtypes[dtype]
+    else:
+        logger.warning('You provided an invalid dtype. Using "float32" as default.')
+        dt = np.float32
+
+    return cast(Type[np.floating], dt)  # Cast dt to the expected type

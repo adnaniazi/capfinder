@@ -15,7 +15,7 @@ from sklearn.metrics import confusion_matrix
 
 from capfinder.model import CapfinderHyperModel
 from capfinder.train_etl import train_etl
-from capfinder.utils import map_cap_int_to_name
+from capfinder.utils import get_dtype, map_cap_int_to_name
 
 # Uncomment the following lines to use JAX as the backend for Keras
 # Also uncomment the set_jax_as_backend() code line in the run_training_pipeline function
@@ -204,6 +204,7 @@ def initialize_comet_ml_experiment(project_name: str) -> Experiment:
     if comet_api_key:
         logger.info("Found CometML API key!")
         experiment = Experiment(
+            auto_output_logging="native",
             auto_histogram_weight_logging=True,
             auto_histogram_gradient_logging=True,
             auto_histogram_activation_logging=True,
@@ -222,7 +223,6 @@ def initialize_tuner(
     hyper_model: CapfinderHyperModel,
     tune_params: dict,
     model_save_dir: str,
-    comet_project_name: str,
 ) -> Union[Hyperband, BayesianOptimization, RandomSearch]:
     """Initialize a Keras Tuner object based on the specified tuning strategy.
 
@@ -258,7 +258,7 @@ def initialize_tuner(
             overwrite=tune_params["overwrite"],
             directory=model_save_dir,
             seed=tune_params["seed"],
-            project_name=comet_project_name,
+            project_name=tune_params["comet_project_name"],
         )
     elif tuning_strategy == "bayesian_optimization":
         tuner = BayesianOptimization(
@@ -268,7 +268,7 @@ def initialize_tuner(
             overwrite=tune_params["overwrite"],
             directory=model_save_dir,
             seed=tune_params["seed"],
-            project_name=comet_project_name,
+            project_name=tune_params["comet_project_name"],
         )
     elif tuning_strategy == "random_search":
         tuner = RandomSearch(
@@ -278,7 +278,7 @@ def initialize_tuner(
             overwrite=tune_params["overwrite"],
             directory=model_save_dir,
             seed=tune_params["seed"],
-            project_name=comet_project_name,
+            project_name=tune_params["comet_project_name"],
         )
     return tuner
 
@@ -287,32 +287,86 @@ def run_training_pipeline(
     etl_params: dict,
     tune_params: dict,
     train_params: dict,
-    comet_project_name: str,
     model_save_dir: str,
 ) -> None:
     # set_jax_as_backend()
 
-    # Load the data
-    x_train, y_train, _, x_val, y_val, _, x_test, y_test, _ = train_etl(
-        etl_params["data_dir"],
-        etl_params["target_length"],
-        etl_params["dtype"],
-        etl_params["n_workers"],
-    )
+    """
+    #################################################
+    #############          ETL         ##############
+    #################################################
+    """
+
+    if etl_params["use_local_dataset"]:
+        x_train, y_train, _, x_test, y_test, _, dataset_info = train_etl(
+            etl_params["data_dir"],
+            etl_params["save_dir"],
+            etl_params["target_length"],
+            etl_params["dtype"],
+            etl_params["n_workers"],
+        )
+    else:  # use remote dataset
+        dataset_info = {}
+        experiment = initialize_comet_ml_experiment(project_name="capfinder-datasets")
+        art = experiment.get_artifact(
+            artifact_name="cap_data",
+            version_or_alias=etl_params["remote_dataset_version"],
+        )
+        art.download(path=etl_params["save_dir"], overwrite_strategy=True)
+
+        x_train = np.genfromtxt(
+            os.path.join(etl_params["save_dir"], "train_x.csv"),
+            delimiter=",",
+            dtype=get_dtype(etl_params["dtype"]),
+            skip_header=1,
+        )
+        y_train = np.genfromtxt(
+            os.path.join(etl_params["save_dir"], "train_y.csv"),
+            delimiter=",",
+            dtype=np.int8,
+            skip_header=1,
+        )
+        x_test = np.genfromtxt(
+            os.path.join(etl_params["save_dir"], "test_x.csv"),
+            delimiter=",",
+            dtype=get_dtype(etl_params["dtype"]),
+            skip_header=1,
+        )
+        y_test = np.genfromtxt(
+            os.path.join(etl_params["save_dir"], "test_y.csv"),
+            delimiter=",",
+            dtype=np.int8,
+            skip_header=1,
+        )
+        x_train = x_train.reshape(-1, x_train.shape[1], 1)
+        x_test = x_test.reshape(-1, x_test.shape[1], 1)
+        dataset_info["version"] = art.version
+        dataset_info["etl_experiment_url"] = (
+            f"Used data version {art.version} from COMETs data registry"
+        )
+        experiment.end()
 
     logger.info("Dataset loaded successfully!")
     logger.info(f"x_train shape: {x_train.shape}")
-    logger.info(f"x_val shape: {x_val.shape}")
     logger.info(f"x_test shape: {x_test.shape}")
+    logger.info(f"Dataset version: {dataset_info["version"]}")
 
+    """
+    #################################################
+    #############        TUNE          ##############
+    #################################################
+    """
+
+    tune_experiment = initialize_comet_ml_experiment(
+        project_name=tune_params["comet_project_name"]
+    )
+    tune_experiment_url = tune_experiment.url
     # Hyperparameter tuning
     hyper_model = CapfinderHyperModel(
-        input_shape=etl_params["input_shape"], n_classes=etl_params["n_classes"]
+        input_shape=(etl_params["target_length"], 1), n_classes=etl_params["n_classes"]
     )
 
-    tuner = initialize_tuner(
-        hyper_model, tune_params, model_save_dir, comet_project_name
-    )
+    tuner = initialize_tuner(hyper_model, tune_params, model_save_dir)
 
     tensorboard_save_path = os.path.join(
         model_save_dir,
@@ -327,8 +381,7 @@ def run_training_pipeline(
         tuner.search(
             x_train,
             y_train,
-            validation_data=(x_val, y_val),
-            # validation_split=0.2,
+            validation_split=0.2,
             epochs=tune_params["max_epochs_hpt"],
             batch_size=tune_params["batch_size"],
             callbacks=[
@@ -344,9 +397,6 @@ def run_training_pipeline(
         # Retrieve the best hyperparameters found during the search
         best_hp = tuner.get_best_hyperparameters(num_trials=1)[0]
 
-    experiment = initialize_comet_ml_experiment(comet_project_name)
-    comet_callback = experiment.get_callback(framework="keras")
-
     log_params = {
         "ETL params": etl_params,
         "Tune params": tune_params,
@@ -354,18 +404,32 @@ def run_training_pipeline(
         "Data Shapes": {
             "x_train": x_train.shape,
             "y_train": y_train.shape,
-            "x_val": x_val.shape,
-            "y_val": y_val.shape,
             "x_test": x_test.shape,
             "y_test": y_test.shape,
         },
+        "Dataset version": dataset_info["version"],
         "Best Hyperparameters": {
             f"{key}": value for key, value in best_hp.values.items()
         },
     }
 
-    if experiment:
-        experiment.log_parameters(log_params)
+    if tune_experiment:
+        tune_experiment.log_parameters(log_params)
+        tune_experiment.end()
+
+    """
+    #################################################
+    #############        TRAIN         ##############
+    #################################################
+    """
+
+    train_experiment = initialize_comet_ml_experiment(
+        project_name=train_params["comet_project_name"]
+    )
+    comet_callback = train_experiment.get_callback(framework="keras")
+
+    if train_experiment:
+        train_experiment.log_parameters(log_params)
 
     # Final model training
     best_model = hyper_model.build(best_hp)
@@ -382,7 +446,7 @@ def run_training_pipeline(
     best_model.fit(
         x_train,
         y_train,
-        validation_data=(x_val, y_val),
+        validation_split=0.2,
         epochs=train_params["max_epochs_final_model"],
         batch_size=train_params["batch_size"],
         callbacks=[
@@ -425,9 +489,9 @@ def run_training_pipeline(
         os.path.join(model_save_dir, "encoder"),
     )
 
-    if experiment:
-        experiment.log_model("Classifier", model_save_path)
-        experiment.log_model("Encoder", encoder_save_path)
+    if train_experiment:
+        train_experiment.log_model("Classifier", model_save_path)
+        train_experiment.log_model("Encoder", encoder_save_path)
         logger.info(f"Best classifier model saved at: \n{model_save_path}")
         logger.info(f"Best encoder model saved at: \n{encoder_save_path}")
 
@@ -440,54 +504,68 @@ def run_training_pipeline(
         conf_matrix_train, index=class_labels, columns=class_labels
     )
     conf_matrix_str_train = conf_matrix_df_train.to_string()
-    experiment.log_text(
-        text=conf_matrix_str_train, metadata={"Description": "Train Confusion Matrix"}
-    )
-    experiment.log_text(
-        text=f"tensorboard --logdir {tensorboard_save_path}",
-        metadata={"Description": "Tensorboard command"},
-    )
 
-    # Log the test set confusion matrix to the Comet ML dashboard pane
-    experiment.log_confusion_matrix(
-        title="Test Confusion Matrix",
-        y_true=y_test,
-        y_predicted=y_pred_test,
-        labels=class_labels,
-    )
+    if train_experiment:
+        train_experiment.log_text(
+            text=dataset_info["etl_experiment_url"],
+            metadata={"Description": "ETL Experiment URL"},
+        )
+        train_experiment.log_text(
+            text=tune_experiment_url,
+            metadata={"Description": "Tune Experiment URL"},
+        )
+        train_experiment.log_text(
+            text=conf_matrix_str_train,
+            metadata={"Description": "Train Confusion Matrix"},
+        )
+        train_experiment.log_text(
+            text=f"tensorboard --logdir {tensorboard_save_path}",
+            metadata={"Description": "Tensorboard command"},
+        )
 
-    experiment.end()
+        # Log the test set confusion matrix to the Comet ML dashboard pane
+        train_experiment.log_confusion_matrix(
+            title="Test Confusion Matrix",
+            y_true=y_test,
+            y_predicted=y_pred_test,
+            labels=class_labels,
+        )
+
+        train_experiment.end()
 
 
 if __name__ == "__main__":
     # Configure settings here
     etl_params = {
         "data_dir": "/export/valenfs/data/processed_data/MinION/9_madcap/dummy_data/real_data2/",
-        "target_length": 500,
-        "dtype": "float16",
-        "n_workers": 10,
-        "input_shape": (500, 1),
-        "n_classes": 4,
+        "save_dir": "/export/valenfs/data/processed_data/MinION/9_madcap/dummy_data/saved_data/",
+        "target_length": 500,  # length of time series
+        "dtype": "float16",  # data type of the time series
+        "n_workers": 10,  # number of workers for parallel processing (by prefect)
+        "n_classes": 4,  # number of classes in the dataset
+        "use_local_dataset": True,  # set to False to use the online dataset, otherwise the local dataset will be used and will be uplaoded to comet
+        "remote_dataset_version": "latest",  # version of the online dataset to use
     }
 
     tune_params = {
+        "comet_project_name": "capfinder_tfr_tune",
         "patience": 0,
-        "max_epochs_hpt": 3,  # for yyperband
-        "max_trials": 5,  # for random_search, and bayesian_optimization
+        "max_epochs_hpt": 3,
+        "max_trials": 5,  # for random_search, and bayesian_optimization. For hyperband this has no effect
         "factor": 2,
         "batch_size": 64,
         "seed": 42,
-        "tuning_strategy": "random_search",  # or "random_search" or "bayesian_optimization"
+        "tuning_strategy": "hyperband",  # "hyperband" or "random_search" or "bayesian_optimization"
         "overwrite": True,
     }
 
     train_params = {
+        "comet_project_name": "capfinder_tfr_train",
         "patience": 2,
-        "max_epochs_final_model": 20,
+        "max_epochs_final_model": 10,
         "batch_size": 64,
     }
 
-    comet_project_name = "capfinder_tfr_tuner"
     model_save_dir = "/export/valenfs/data/processed_data/MinION/9_madcap/models/"
 
     # Run the training pipeline
@@ -495,6 +573,5 @@ if __name__ == "__main__":
         etl_params=etl_params,
         tune_params=tune_params,
         train_params=train_params,
-        comet_project_name=comet_project_name,
         model_save_dir=model_save_dir,
     )

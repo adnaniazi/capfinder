@@ -53,7 +53,15 @@ def transformer_encoder(
     x = layers.Dropout(dropout)(x)
     x = layers.Conv1D(filters=inputs.shape[-1], kernel_size=1)(x)
     x = layers.LayerNormalization(epsilon=1e-6)(x)
-    return x + res
+
+    # Masking for zero padding
+    mask = layers.Lambda(
+        lambda x: keras.ops.cast(keras.ops.equal(x, 0.0), dtype="float32"),
+        output_shape=(inputs.shape[1], 1),  # Specify output shape
+    )(inputs)
+    x = (x + res) * mask  # Apply mask to the summed output (including residual)
+
+    return x
 
 
 def build_model(
@@ -110,11 +118,13 @@ def build_model(
     for _ in range(num_transformer_blocks):
         x = transformer_encoder(x, head_size, num_heads, ff_dim, dropout)
 
-    # Save the encoder output
-    encoder_output = x
-
     # Apply global average pooling
     x = layers.GlobalAveragePooling1D(data_format="channels_last")(x)
+
+    # Save the encoder output
+    # The vectors fro mthe GlobalAveragePolling1D are of fixed size
+    # Before this layer, they are not of fixed length
+    encoder_output = x
 
     # Add multi-layer perceptron (MLP) layers
     for dim in mlp_units:
