@@ -2,7 +2,46 @@ from typing import List, Optional, Tuple
 
 import keras
 from keras import Model, layers
+from keras import ops as kops
+from keras.layers import Input
 from keras_tuner import HyperModel, HyperParameters
+
+
+def mcc(y_true: Input, y_pred: Input) -> Input:
+    """
+    Calculates the Matthews Correlation Coefficient (MCC) metric using Keras functions.
+
+    Args:
+        y_true: Ground truth labels (one-hot encoded, shape: [None]).
+        y_pred: Predicted probabilities (shape: [None, num_classes]).
+
+    Returns:
+        A tensor with the MCC value for each sample in the batch.
+    """
+    y_true = kops.cast(y_true, "float32")  # Cast y_true to float32 for calculations
+
+    # Reshape y_pred only if necessary
+    if kops.ndim(y_pred) == 1:
+        # Reshape y_pred to match the number of classes in y_true (one-hot encoded)
+        num_classes = keras.backend.int_shape(y_true)[-1]
+        y_pred = kops.reshape(y_pred, (-1, num_classes))
+
+    # Convert probabilities to binary predictions (optional)
+    # You can uncomment this line if you need binary predictions
+    # y_pred = K.cast(y_pred > 0.5, np.float32)
+
+    # True positives, negatives, etc. (using Keras functions)
+    tp = kops.mean(kops.equal(y_true, kops.argmax(y_pred, axis=-1)), axis=-1)
+    tn = kops.mean(kops.equal(1 - y_true, 1 - kops.max(y_pred, axis=-1)), axis=-1)
+    fp = kops.mean(kops.equal(y_true, 1 - kops.max(y_pred, axis=-1)), axis=-1)
+    fn = kops.mean(kops.equal(1 - y_true, kops.max(y_pred, axis=-1)), axis=-1)
+
+    # Calculate MCC
+    numerator = tp * tn - fp * fn
+    denominator = kops.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
+    mcc_value = numerator / (denominator + keras.config.epsilon())
+
+    return mcc_value
 
 
 def transformer_encoder(
@@ -174,7 +213,7 @@ class CapfinderHyperModel(HyperModel):
         model.compile(
             loss="sparse_categorical_crossentropy",
             optimizer="adam",
-            metrics=["sparse_categorical_accuracy"],
+            metrics=["sparse_categorical_accuracy", mcc],
         )
 
         # Return only the full model to Keras Tuner

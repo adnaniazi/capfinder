@@ -346,9 +346,15 @@ def run_training_pipeline(
         )
         experiment.end()
 
+    # Convert the integer labels to one-hot encoded labels
+    # y_train = keras.utils.to_categorical(y_train, etl_params["n_classes"])
+    # y_test = keras.utils.to_categorical(y_test, etl_params["n_classes"])
+
     logger.info("Dataset loaded successfully!")
     logger.info(f"x_train shape: {x_train.shape}")
     logger.info(f"x_test shape: {x_test.shape}")
+    logger.info(f"y_train shape: {y_train.shape}")
+    logger.info(f"y_test shape: {y_test.shape}")
     logger.info(f"Dataset version: {dataset_info["version"]}")
 
     """
