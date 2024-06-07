@@ -403,6 +403,62 @@ def collate_bam_pod5(
     plot_signal: bool,
     output_dir: str,
 ) -> None:
+    """
+    Collates information from the BAM file and the POD5 files,
+    aligns OTE to extracts the signal for the
+    region of interest (ROI) for training or testing purposes.
+    It also plots the ROI signal if requested.
+
+    Params:
+    -------
+    bam_filepath : str
+        Path to the BAM file.
+    pod5_dir : str
+        Path to the directory containing the POD5 files.
+    num_processes : int
+        Number of processes to use for parallel processing.
+    reference : str
+        Reference sequence.
+    cap_class : int
+        Class label for the RNA cap.
+
+        Valid options for `cap_class` and their corresponding meanings are:
+
+        * 0: "cap_0" - Represents the absence of a specific modification at the 5' end.
+        * 1: "cap_1" (default) - The most common cap structure, typically containing a 7-methylguanosine (m7G) modification.
+        * 2: "cap_2" - Less common cap structure, often containing a 2'-O-methyl modification.
+        * 3: "cap_2-1" - Combination of cap_2 and cap_1 modifications.
+        * 4: "cap_TMG" - Cap structure with trimethylguanosine (TMG) modification.
+        * 5: "cap_NAD" - Cap structure with nicotinamide adenine dinucleotide (NAD) modification.
+        * 6: "cap_FAD" - Cap structure with flavin adenine dinucleotide (FAD) modification.
+        * -99: "cap_unknown" - Indicates an unknown or undetermined cap structure.
+
+    cap0_pos : int
+        Position of the cap N1 base in the reference sequence (0-based).
+
+    train_or_test : str
+        Whether to extract ROI for training or testing.
+        Valid options are'train' or 'test'.
+
+    plot_signal : bool
+        Whether to plot the ROI signal.
+
+    output_dir : str
+        Path to the output directory.
+
+        Will Contain:
+        * A CSV file (data__cap_x.csv) containing the extracted ROI signal data.
+        * A CSV file (metadata__cap_x.csv) containing the complete metadata information.
+        * A log file (capfinder_vXYZ_datatime.log) containing the logs of the program.
+        * A directory (plots) containing the plots of the ROI signal if plot_signal is set to True.
+            * good_reads: Directory that contains the plots for the good reads.
+            * bad_reads: Directory that contains the plots for the bad reads.
+            * plotpaths.csv: CSV file containing the paths to the plots based on the read ID.
+
+    Returns:
+    --------
+    None
+    """
     # 1. Initial configuration
     configure_logger(output_dir)
     logger.info("Computing BAM total records...")
@@ -489,12 +545,12 @@ def collate_bam_pod5(
 
 if __name__ == "__main__":
     bam_filepath = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/8_20231114_randomCAP1v3_rna004/1_basecall_subset/sorted.calls.bam"
-    pod5_dir = "/export/valenfs/data/raw_data/minion/20231114_randomCAP1v3_rna004"
+    pod5_dir = "/export/valenfs/data/raw_data/minion/2024_cap_ligation_data_v3_oligo/20240521_cap1/20231114_randomCAP1v3_rna004/"
     num_processes = 3
     reference = "GCTTTCGTTCGTCTCCGGACTTATCGCACCACCTATCCATCATCAGTACTGT"
     cap0_pos = 52
     train_or_test = "test"
-    output_dir = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/8_20231114_randomCAP1v3_rna004/test_OTE_vizs19"
+    output_dir = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/8_20231114_randomCAP1v3_rna004/test_OTE_vizs_jun2"
     plot_signal = True
     cap_class = 1
     collate_bam_pod5(

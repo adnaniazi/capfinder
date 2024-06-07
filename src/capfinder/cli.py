@@ -1,0 +1,240 @@
+import json
+import textwrap
+from typing import Optional
+
+import typer
+from loguru import logger
+from typing_extensions import Annotated
+
+app = typer.Typer(
+    help="capfinder: A Python package for decoding RNA cap types using an encoder-based deep learning model.",
+    add_completion=False,
+    rich_markup_mode="rich",
+)
+
+
+@app.command()
+def fetch_cap_signal(
+    bam_filepath: Annotated[str, typer.Argument(help="Path to the BAM file")],
+    pod5_dir: Annotated[
+        str, typer.Argument(help="Path to directory containing POD5 files")
+    ],
+    reference: Annotated[str, typer.Argument(help="Reference Sequence (5' -> 3')")],
+    cap_class: Annotated[
+        int,
+        typer.Argument(
+            help="""\n
+    Integer-based class label for the RNA cap type. \n
+    - 0 represents Cap_0 \n
+    - 1 represents Cap 1 \n
+    - 2 represents Cap 2 \n
+    - 3 represents Cap2-1 \n
+    - 4 represents TMG Cap \n
+    - 5 represents NAD Cap \n
+    - 6 represents FAD Cap \n
+    - -99 represents and unknown cap(s). \n
+    """
+        ),
+    ],
+    cap_n1_pos0: Annotated[
+        int,
+        typer.Argument(
+            help="0-based index of 1st nucleotide (N1) of cap in the reference"
+        ),
+    ],
+    train_or_test: Annotated[
+        str,
+        typer.Argument(
+            help="set to train or test depending on whether it is training or testing data"
+        ),
+    ],
+    output_dir: Annotated[
+        str,
+        typer.Argument(
+            help=textwrap.dedent(
+                """
+        Path to the output directory which will contain: \n
+            ├── A CSV file (data__cap_x.csv) containing the extracted ROI signal data.\n
+            ├── A CSV file (metadata__cap_x.csv) containing the complete metadata information.\n
+            ├── A log file (capfinder_vXYZ_datatime.log) containing the logs of the program.\n
+            └── (Optional) plots directory containing cap signal plots, if plot_signal is set to True.\n
+            \u200B    ├── good_reads: Directory that contains the plots for the good reads.\n
+            \u200B    ├── bad_reads: Directory that contains the plots for the bad reads.\n
+            \u200B    └── plotpaths.csv: CSV file containing the paths to the plots based on the read ID.\n
+    """
+            )
+        ),
+    ],
+    n_workers: Annotated[
+        int,
+        typer.Option(
+            "--n_workers", help="Number of CPUs to use for parallel processing"
+        ),
+    ] = 1,
+    plot_signal: Annotated[
+        Optional[bool],
+        typer.Option(
+            "--plot_signal/--no_plot_signal",
+            help="Whether to plot extracted cap signal or not",
+        ),
+    ] = None,
+) -> None:
+    """
+    Extracts signal corresponding to the RNA cap type using BAM and POD5 files. Also, generates plots if required.
+    """
+    from capfinder.collate import collate_bam_pod5
+
+    ps = False
+    if plot_signal is None:
+        ps = False
+    elif plot_signal:
+        ps = True
+    else:
+        ps = False
+
+    collate_bam_pod5(
+        bam_filepath=bam_filepath,
+        pod5_dir=pod5_dir,
+        num_processes=n_workers,
+        reference=reference,
+        cap_class=cap_class,
+        cap0_pos=cap_n1_pos0,
+        train_or_test=train_or_test,
+        plot_signal=ps,
+        output_dir=output_dir,
+    )
+
+
+@app.command()
+def perpare_train_dataset(
+    data_dir: Annotated[
+        str,
+        typer.Argument(
+            help="Directory containing all the cap signal data files (data__cap_x.csv)"
+        ),
+    ],
+    save_dir: Annotated[
+        str,
+        typer.Argument(
+            help="Directory where the processed data will be saved as csv files."
+        ),
+    ],
+    target_length: Annotated[
+        int,
+        typer.Argument(
+            help="Number of signal points in cap signal to consider. If the signal is shorter, it will be padded with zeros. If the signal is longer, it will be truncated."
+        ),
+    ],
+    dtype: Annotated[
+        str,
+        typer.Argument(
+            help="Data type to transform the dataset to Valid values are 'float16', 'float32', or 'float64'."
+        ),
+    ],
+    n_workers: Annotated[
+        int,
+        typer.Argument(help="Number of CPUs to use for parallel processing"),
+    ],
+) -> None:
+    """
+    Prepares dataset for training the ML model.
+    """
+    from typing import cast
+
+    from capfinder.train_etl import DtypeLiteral, train_etl
+
+    dt: DtypeLiteral = "float32"
+    if dtype in {"float16", "float32", "float64"}:
+        dt = cast(
+            DtypeLiteral, dtype
+        )  # This is safe because input_str must be one of the Literal values
+    else:
+        logger.warning(
+            f"Invalid dtype literal: {dtype}. Allowed values are 'float16', 'float32', 'float64'. Using 'float32' as default."
+        )
+
+    train_etl(
+        data_dir=data_dir,
+        save_dir=save_dir,
+        target_length=target_length,
+        dtype=dt,
+        n_workers=n_workers,
+    )
+
+
+@app.command()
+def create_train_config(
+    file_path: Annotated[
+        str, typer.Argument(help="File path to save the JSON configuration file")
+    ],
+) -> None:
+    """Creats a dummy JSON configuration file at the specified path. Edit it to suit your needs."""
+    config = {
+        "etl_params": {
+            "data_dir": "/export/valenfs/data/processed_data/MinION/9_madcap/dummy_data/real_data2/",
+            "save_dir": "/export/valenfs/data/processed_data/MinION/9_madcap/dummy_data/saved_data/",
+            "target_length": 500,
+            "dtype": "float16",
+            "n_workers": 10,
+            "n_classes": 4,
+            "use_local_dataset": True,
+            "remote_dataset_version": "latest",
+        },
+        "tune_params": {
+            "comet_project_name": "capfinder_tfr_tune",
+            "patience": 0,
+            "max_epochs_hpt": 3,
+            "max_trials": 5,
+            "factor": 2,
+            "batch_size": 64,
+            "seed": 42,
+            "tuning_strategy": "hyperband",
+            "overwrite": True,
+        },
+        "train_params": {
+            "comet_project_name": "capfinder_tfr_train",
+            "patience": 2,
+            "max_epochs_final_model": 10,
+            "batch_size": 64,
+        },
+        "model_save_dir": "/export/valenfs/data/processed_data/MinION/9_madcap/models/",
+    }
+
+    with open(file_path, "w") as file:
+        json.dump(config, file, indent=4)
+
+
+@app.command()
+def train_model(
+    config_file: Annotated[
+        str,
+        typer.Argument(
+            help="""\n
+    Path to the JSON configuration file containing the parameters for the training pipeline. \n
+    """
+        ),
+    ],
+) -> None:
+    """Trains the model using the parameters in the JSON configuration file."""
+    from capfinder.training import run_training_pipeline
+
+    # Load the configuration file
+    with open(config_file) as file:
+        config = json.load(file)
+
+    etl_params = config["etl_params"]
+    tune_params = config["tune_params"]
+    train_params = config["train_params"]
+    model_save_dir = config["model_save_dir"]
+
+    # Run the training pipeline with the loaded parameters
+    run_training_pipeline(
+        etl_params=etl_params,
+        tune_params=tune_params,
+        train_params=train_params,
+        model_save_dir=model_save_dir,
+    )
+
+
+if __name__ == "__main__":
+    app()

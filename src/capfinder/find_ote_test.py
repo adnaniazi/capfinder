@@ -263,7 +263,17 @@ def process_read(record: Any, reference: str, cap0_pos: int) -> Dict[str, Any]:
         "fasta_length": fasta_length,
     }
 
-    return out_ds_passed
+    # A fix to avoid outputting blank ROI when the read is shorter than
+    # computed ROI coordinates
+    sl = len(sequence)
+    if (left_flanking_region_start_fastq_pos) > sl or (
+        right_flanking_region_start_fastq_pos
+    ) > sl:
+        output = out_ds_failed
+    else:
+        output = out_ds_passed
+
+    return output
 
 
 def process_fastq_file(
