@@ -115,6 +115,29 @@ def extract_cap_signal(
 ) -> None:
     """
     Extracts signal corresponding to the RNA cap type using BAM and POD5 files. Also, generates plots if required.
+
+    Example command:
+    capfinder extract-cap-signal \\
+        --bam_filepath /path/to/sorted.bam \\
+        --pod5_dir /path/to/pod5_dir \\
+        --reference GCTTTCGTTCGTCTCCGGACTTATCGCACCACCTATCCATCATCAGTACTGT \\
+        --cap_class -99 \\
+        --cap_n1_pos0 52 \\
+        --train_or_test test \\
+        --output_dir /path/to/output_dir \\
+        --n_workers 10 \\
+        --no_plot_signal
+
+    capfinder extract-cap-signal \\
+        --bam_filepath /path/to/sorted.bam \\
+        --pod5_dir /path/to/pod5_dir \\
+        --reference GCTTTCGTTCGTCTCCGGACTTATCGCACCACCTATCCATCATCAGTACTGTNNNNNNCGATGTAACTGGGACATGGTGAGCAATCAGGGAAAAAAAAAAAAAAA \\
+        --cap_class 0 \\
+        --cap_n1_pos0 52 \\
+        --train_or_test train \\
+        --output_dir /path/to/output_dir \\
+        --n_workers 10 \\
+        --no_plot_signal
     """
     from capfinder.collate import collate_bam_pod5
 
