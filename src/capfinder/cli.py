@@ -1,16 +1,35 @@
 import json
 import textwrap
+from importlib.metadata import version
 from typing import Optional
 
 import typer
 from loguru import logger
 from typing_extensions import Annotated
 
+version_info = version("capfinder")
+
 app = typer.Typer(
-    help="capfinder: A Python package for decoding RNA cap types using an encoder-based deep learning model.",
+    help=f"""Capfinder v{version_info}: A Python package for decoding RNA cap types using an encoder-based deep learning model.\n
+    """,
     add_completion=True,
     rich_markup_mode="rich",
 )
+
+
+def version_callback(value: bool) -> None:
+    if value:
+        typer.echo(f"Capfinder v{version_info}")
+        raise typer.Exit()
+
+
+@app.callback()
+def main(
+    version: bool = typer.Option(
+        None, "--version", callback=version_callback, is_eager=True
+    ),
+) -> None:
+    pass
 
 
 @app.command()
