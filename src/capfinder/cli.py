@@ -255,8 +255,8 @@ def create_train_config(
             "dtype": "float16",
             "n_workers": 10,
             "n_classes": 4,
-            "use_local_dataset": True,
-            "remote_dataset_version": "latest",
+            "use_local_dataset": False,
+            "remote_dataset_version": "8.0.0",
         },
         "tune_params": {
             "comet_project_name": "capfinder_tfr_tune",

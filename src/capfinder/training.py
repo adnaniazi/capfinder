@@ -235,6 +235,7 @@ def initialize_tuner(
     hyper_model: "CNNLSTMModel | EncoderModel",
     tune_params: dict,
     model_save_dir: str,
+    model_type: ModelType,
 ) -> Union[Hyperband, BayesianOptimization, RandomSearch]:
     """Initialize a Keras Tuner object based on the specified tuning strategy.
 
@@ -247,6 +248,8 @@ def initialize_tuner(
     model_save_dir: str
         The directory where the model should be saved.
     comet_project_name: str
+    model_type: ModelType
+        Type of the model to be trained.
 
     Returns:
     --------
@@ -465,16 +468,14 @@ def run_training_pipeline(
         input_shape=(etl_params["target_length"], 1), n_classes=etl_params["n_classes"]
     )
 
-    tuner = initialize_tuner(hyper_model, tune_params, model_save_dir)
+    tuner = initialize_tuner(hyper_model, tune_params, model_save_dir, model_type)
 
-    tensorboard_save_path = os.path.join(model_save_dir, "tensorboard_logs_encoder")
-    logger.info(
-        f"Run tensorboard as following:\ntensorboard --logdir {tensorboard_save_path}"
-    )
+    # tensorboard_save_path = os.path.join(model_save_dir, "tensorboard_logs_encoder", model_type)
+    # logger.info(
+    #     f"Run tensorboard as following:\ntensorboard --logdir {tensorboard_save_path}"
+    # )
 
     # Split train into train-val sets
-    # dataset_size = len(list(train_dataset))  # Calculate the dataset size
-
     dataset_size = train_dataset.reduce(0, lambda x, _: x + 1).numpy()
 
     train_size = int(0.8 * dataset_size)  # 80% for training
@@ -494,7 +495,6 @@ def run_training_pipeline(
             validation_data=val_dataset,
             validation_steps=val_size,
             epochs=tune_params["max_epochs_hpt"],
-            # batch_size=tune_params["batch_size"],
             callbacks=[
                 keras.callbacks.EarlyStopping(
                     patience=tune_params["patience"], restore_best_weights=True
@@ -722,10 +722,10 @@ def run_training_pipeline(
             text=conf_matrix_str_train,
             metadata={"Description": "Train Confusion Matrix"},
         )
-        train_experiment.log_text(
-            text=f"tensorboard --logdir {tensorboard_save_path}",
-            metadata={"Description": "Tensorboard command"},
-        )
+        # train_experiment.log_text(
+        #     text=f"tensorboard --logdir {tensorboard_save_path}",
+        #     metadata={"Description": "Tensorboard command"},
+        # )
 
         # Log the test set confusion matrix to the Comet ML dashboard pane
         train_experiment.log_confusion_matrix(
