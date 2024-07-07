@@ -5,13 +5,12 @@ from typing import Any, List, Optional, Tuple, Type, Union
 import comet_ml
 import numpy as np
 import polars as pl
-from dask.distributed import LocalCluster
+from imblearn.under_sampling import RandomUnderSampler
 from loguru import logger
 from polars import DataFrame
 from prefect import flow, task
-from prefect.engine import PrefectFuture, TaskRunContext
+from prefect.engine import TaskRunContext
 from prefect.tasks import task_input_hash
-from prefect_dask.task_runners import DaskTaskRunner
 from typing_extensions import Literal
 
 from capfinder.utils import get_dtype
@@ -75,31 +74,62 @@ def list_csv_files(folder_path: str) -> list:
 
 
 @task(name="load-csv", cache_key_fn=task_input_hash)
-def load_csv(file_path: str) -> pl.DataFrame:
-    """Load a CSV file into a DataFrame.
+def load_csv(file_path: str, max_records: int = 1_300_000) -> pl.DataFrame:
+    """Load a CSV file into a single DataFrame with a maximum number of records.
 
     Parameters
     ----------
     file_path: str
         Path to the CSV file.
+    max_records: int, optional
+        Maximum number of records to read, defaults to 20.
 
     Returns
     -------
     pl.DataFrame
         DataFrame containing the CSV data.
     """
-    return pl.read_csv(file_path)
+    result_df = pl.DataFrame()
+    records_read = 0
+    chunk_size = 50000
+
+    # Read the first chunk with header
+    first_chunk = pl.read_csv(file_path, n_rows=chunk_size, has_header=True)
+    result_df = pl.concat([result_df, first_chunk])
+    records_read += len(first_chunk)
+
+    # Get the column names from the first chunk
+    column_names = first_chunk.columns
+
+    # Read subsequent chunks with skip_rows
+    while records_read < max_records:
+        try:
+            chunk = pl.read_csv(
+                file_path,
+                n_rows=chunk_size,
+                skip_rows=records_read,
+                has_header=False,
+                new_columns=column_names,
+            )
+            if chunk.is_empty():
+                break
+        except Exception:
+            break
+        result_df = pl.concat([result_df, chunk])
+        records_read += len(chunk)
+        logger.info(f"Records read: {records_read}")
+
+    # Limit the result to max_records
+    return result_df.head(max_records)
 
 
 @task(name="concatenate-dataframes", cache_key_fn=task_input_hash)
-def concatenate_dataframes(
-    dataframes: List[PrefectFuture[DataFrame, Literal[False]]]
-) -> pl.DataFrame:
+def concatenate_dataframes(dataframes: List[DataFrame]) -> pl.DataFrame:
     """Concatenate a list of DataFrames vertically.
 
     Parameters
     ----------
-    dataframes: List[PrefectFuture[DataFrame, Literal[False]]]
+    dataframes: List[DataFrame]
         List of DataFrames to concatenate.
 
     Returns
@@ -107,9 +137,11 @@ def concatenate_dataframes(
     pl.DataFrame
         Concatenated DataFrame. Returns an empty DataFrame if the input list is empty.
     """
+    # List[PrefectFuture[DataFrame, Literal[False]]
     if not dataframes:
         return pl.DataFrame()
-    return pl.concat(dataframes, how="vertical")  # type: ignore
+    logger.info("Concatenating DataFrames")
+    return pl.concat(dataframes, how="vertical")
 
 
 @task(name="make-train-test-split", cache_key_fn=task_input_hash)
@@ -119,7 +151,7 @@ def make_train_test_split(
     random_seed: int,
 ) -> Tuple[pl.DataFrame, pl.DataFrame]:
     """
-    Split a Polars DataFrame into train and test sets.
+    Split a Polars DataFrame into balanced train and test sets.
 
     Parameters
     ----------
@@ -129,25 +161,62 @@ def make_train_test_split(
 
     Returns
     -------
-        Tuple[pl.DataFrame, pl.DataFrame]: A tuple containing the train and test sets.
+        Tuple[pl.DataFrame, pl.DataFrame]: A tuple containing the balanced train and test sets.
     """
 
     # Verify that the train fraction is valid
     if not 0 < train_frac < 1:
         raise ValueError("train_frac must be between 0 and 1")
 
-    # Shuffle the DataFrame rows based on the random seed
-    df = df.sample(fraction=1.0, with_replacement=False, seed=random_seed)
+    def balance_classes(df: pl.DataFrame, random_seed: int) -> pl.DataFrame:
+        y = df.drop_in_place("cap_class")  # Target
+        x = df  # Features
 
-    # Calculate the number of rows for the train split
-    total_rows = df.height
-    train_rows = int(total_rows * train_frac)
+        # Convert Polars DataFrame to numpy arrays
+        x_array = x.to_numpy()
+        y_array = y.to_numpy()
 
-    # Split the DataFrame
-    train_df = df[:train_rows]
-    test_df = df[train_rows:]
+        # Instantiate the RandomUnderSampler
+        under_sampler = RandomUnderSampler(random_state=random_seed)
 
-    return train_df, test_df
+        # Resample the dataset
+        x_resampled, y_resampled = under_sampler.fit_resample(x_array, y_array)
+
+        # Get the column names from the DataFrame's schema
+        column_names = df.columns
+
+        # Combine features and target into a Polars DataFrame
+        balanced_df = pl.DataFrame(
+            {
+                "cap_class": pl.Series(y_resampled),
+                **{col: x_resampled[:, i] for i, col in enumerate(column_names)},
+            }
+        )
+        return balanced_df
+
+    balanced_df = balance_classes(df=df, random_seed=random_seed)
+
+    # Shuffle the DataFrame using numpy
+    def shuffle_df(df: pl.DataFrame, random_seed: int) -> pl.DataFrame:
+        np.random.seed(random_seed)
+        shuffled_indices = np.random.permutation(len(df))
+        return df[shuffled_indices]
+
+    balanced_df = shuffle_df(df=balanced_df, random_seed=random_seed)
+
+    # Split the balanced DataFrame
+    train_size = int(len(balanced_df) * train_frac)
+    train_df = balanced_df[:train_size]
+    test_df = balanced_df[train_size:]
+
+    balanced_train_df = balance_classes(train_df, random_seed)
+    balanced_test_df = balance_classes(test_df, random_seed)
+
+    # Final shuffle to ensure randomness
+    balanced_train_df = shuffle_df(balanced_train_df, random_seed)
+    balanced_test_df = shuffle_df(balanced_test_df, random_seed)
+
+    return balanced_train_df, balanced_test_df
 
 
 @task(name="zero-pad-and-reshape", cache_key_fn=task_input_hash)
@@ -169,20 +238,39 @@ def zero_pad_and_reshape(
     """
 
     # Function to parse the time series from string to numpy array, and zero pad or truncate
-    def parse_and_pad(series: str) -> np.ndarray:
-        # Remove brackets and replace newline characters with spaces
-        series_cleaned = series.replace("\n", " ").strip("[]")
+    def parse_and_pad(series: str) -> pl.Series:
 
         # Convert to a numpy array of floats
-        series_array = np.fromstring(series_cleaned, sep=" ")
+        series_array = np.fromstring(series, sep=",")
 
         # Calculate the length of the series
         series_length = len(series_array)
 
         # Handle the case where the length is greater than the target length
         if series_length > target_length:
-            # Truncate the series to the target length
-            series_array = series_array[:target_length]
+            # Calculate the excess length (how many elements to remove)
+            excess_length = series_length - target_length
+
+            # Calculate removal from each end
+            remove_from_each_end = excess_length / 2
+
+            # Handle floating-point division
+            if remove_from_each_end != int(
+                remove_from_each_end
+            ):  # Check if it's a float
+                # Remove one extra element (either left or right)
+                remove_from_left = int(
+                    np.ceil(remove_from_each_end)
+                )  # Round up for left side
+                remove_from_right = excess_length - remove_from_left
+            else:
+                # Integer division, remove equally from both sides
+                remove_from_left = int(remove_from_each_end)
+                remove_from_right = remove_from_left
+
+            # Truncate the series equally at both ends
+            series_array = series_array[remove_from_left:-remove_from_right]
+
         # Handle the case where the length is less than the target length
         elif series_length < target_length:
             # Pad the series with zeros to reach the target length
@@ -193,20 +281,20 @@ def zero_pad_and_reshape(
                 constant_values=0,
             )
 
-        return series_array
+        return pl.Series(series_array)
 
     # Apply the function to parse and pad each time series in the column
-    zero_padded_data = (
-        df[column_name]
-        .map_elements(parse_and_pad, return_dtype=pl.List(pl.Float64))
-        .to_numpy()
+    zero_padded_data = df[column_name].map_elements(
+        parse_and_pad, return_dtype=pl.List(pl.Float64)
     )
 
+    zero_padded_data_np: list[np.ndarray] = zero_padded_data.to_numpy()  # type: ignore
+    zero_padded_data_2d = np.stack(zero_padded_data_np)
+
     # Convert the array to shape (num_examples, num_timesteps, num_features)
-    zero_padded_data_2d = np.array(list(zero_padded_data))
-
-    reshaped_data = zero_padded_data_2d.reshape(len(zero_padded_data), target_length, 1)
-
+    reshaped_data: np.ndarray = zero_padded_data_2d.reshape(
+        len(zero_padded_data), target_length, 1
+    )
     return reshaped_data
 
 
@@ -222,10 +310,12 @@ def make_x_y_read_id_sets(
         dataset (pl.DataFrame): The input Polars DataFrame containing the data.
         target_length (int): The desired length of each time series.
         dtype_n (Type[np.floating]): The data type to use for the features.
+
     Returns
     -------
         Tuple[np.ndarray, np.ndarray, pl.Series]: A tuple containing the features, labels, and read IDs.
     """
+
     x = zero_pad_and_reshape(dataset, "timeseries", target_length)
     x = x.astype(dtype_n)
     y = (
@@ -411,7 +501,9 @@ def pipeline_task(
         project_name="capfinder-datasets", save_dir=save_dir
     )
     csv_files = list_csv_files(data_dir)
-    loaded_dataframes = [load_csv.submit(file_path) for file_path in csv_files]
+    # loaded_dataframes = [load_csv.submit(file_path) for file_path in csv_files]
+    loaded_dataframes = [load_csv(file_path) for file_path in csv_files]
+
     concatenated_df = concatenate_dataframes(loaded_dataframes)
     train, test = make_train_test_split(concatenated_df, train_frac=0.8, random_seed=42)
     x_train, y_train, read_id_train = make_x_y_read_id_sets(
@@ -479,12 +571,19 @@ def train_etl(
             - dataset_info: Information about the uploaded dataset (dict)
     """
 
+    # @flow(
+    #     name="training-data-pipeline",
+    #     task_runner=DaskTaskRunner(
+    #         cluster_class=LocalCluster,
+    #         cluster_kwargs={
+    #             "n_workers": n_workers,
+    #             "threads_per_worker": 1,
+    #             "heartbeat_interval": 1000000
+    #             },
+    #     ),
+    # )
     @flow(
         name="training-data-pipeline",
-        task_runner=DaskTaskRunner(
-            cluster_class=LocalCluster,
-            cluster_kwargs={"n_workers": n_workers, "threads_per_worker": 2},
-        ),
     )
     def create_datasets(
         data_dir: str,
@@ -503,7 +602,7 @@ def train_etl(
 
 if __name__ == "__main__":
     data_dir = (
-        "/export/valenfs/data/processed_data/MinION/9_madcap/dummy_data/real_data2/"
+        "/export/valenfs/data/processed_data/MinION/9_madcap/dummy_data/real_data3/"
     )
     save_dir = (
         "/export/valenfs/data/processed_data/MinION/9_madcap/dummy_data/saved_data/"
@@ -511,7 +610,7 @@ if __name__ == "__main__":
 
     target_length = 500
     dtype: DtypeLiteral = "float16"
-    n_workers = 10
+    n_workers = 1
 
     (
         x_train,

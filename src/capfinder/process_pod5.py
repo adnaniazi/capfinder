@@ -6,11 +6,24 @@ Author: Adnan M. Niazi
 Date: 2024-02-28
 """
 
-from typing import Any, Dict, Union
+from typing import Any, Dict, Optional, TypedDict
 
 import numpy as np
 import numpy.typing as npt
 import pod5 as p5
+
+
+class ROIData(TypedDict):
+    roi_fasta: Optional[str]
+    roi_signal: np.ndarray
+    signal_start: Optional[int]
+    signal_end: Optional[int]
+    plot_signal: np.ndarray
+    roi_signal_for_plot: Optional[Any]
+    base_locs_in_signal: npt.NDArray[np.int32]
+    start_base_idx_in_fasta: Optional[int]
+    end_base_idx_in_fasta: Optional[int]
+    read_id: Optional[str]
 
 
 def pull_read_from_pod5(read_id: str, pod5_filepath: str) -> Dict[str, Any]:
@@ -167,7 +180,7 @@ def extract_roi_signal(
     start_base_idx_in_fasta: int,
     end_base_idx_in_fasta: int,
     num_left_clipped_bases: int,
-) -> Dict[str, Union[str, npt.NDArray[np.float64], int, float, bytes, Any]]:
+) -> ROIData:
     """
     Extracts the signal data for a region of interest (ROI).
 
@@ -181,19 +194,21 @@ def extract_roi_signal(
         num_left_clipped_bases (int): Number of bases clipped from the left.
 
     Returns:
-        Dict[str, Union[str, npt.NDArray[np.float64], int, float, bytes, Any]]: Dictionary containing the ROI signal and fasta sequence.
+        ROIData: Dictionary containing the ROI signal and fasta sequence.
     """
     signal = preprocess_signal_data(signal)
-    roi_data: Dict[str, Union[str, npt.NDArray[np.float64], int, float, bytes, Any]] = (
-        {}
-    )
-    roi_data["roi_fasta"] = None
-    roi_data["roi_signal"] = np.array([], dtype=np.float64)
-    roi_data["signal_start"] = None
-    roi_data["signal_end"] = None
-    roi_data["plot_signal"] = signal
-    roi_data["roi_signal_for_plot"] = None
-    roi_data["base_locs_in_signal"] = base_locs_in_signal
+    roi_data: ROIData = {
+        "roi_fasta": None,
+        "roi_signal": np.array([], dtype=np.float64),
+        "signal_start": None,
+        "signal_end": None,
+        "plot_signal": signal,  # Assuming signal is defined somewhere
+        "roi_signal_for_plot": None,
+        "base_locs_in_signal": base_locs_in_signal,  # Assuming base_locs_in_signal is defined somewhere
+        "start_base_idx_in_fasta": None,
+        "end_base_idx_in_fasta": None,
+        "read_id": None,
+    }
 
     # Check for valid inputs
     if end_base_idx_in_fasta is None and start_base_idx_in_fasta is None:

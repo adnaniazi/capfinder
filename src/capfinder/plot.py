@@ -16,6 +16,8 @@ from bokeh.models import Div, WheelZoomTool  # type: ignore[attr-defined]
 from bokeh.plotting import figure, output_file, save
 from loguru import logger
 
+from capfinder.process_pod5 import ROIData
+
 
 def append_dummy_sequence(
     fasta_sequence: str, num_left_clipped_bases: int, num_right_clipped_bases: int
@@ -40,7 +42,7 @@ def append_dummy_sequence(
 def plot_roi_signal(
     pod5_data: dict,
     bam_data: dict,
-    roi_data: dict,
+    roi_data: ROIData,
     start_base_idx_in_fasta: int,
     end_base_idx_in_fasta: int,
     plot_filepath: str,
@@ -181,22 +183,28 @@ def plot_roi_signal(
     chunked_aln_str_br = chunked_aln_str.replace("\n", "<br>")
 
     # Handle None values
-    if roi_data["signal_end"] is not None and roi_data["signal_start"] is not None:
-        len_roi_fasta = len(roi_data["roi_fasta"])
-        if len_roi_fasta > 0:
-            translocation_rate = int(
-                (roi_data["signal_end"] - roi_data["signal_start"]) / len_roi_fasta
-            )
-        else:
-            translocation_rate = None
-        roi_length_in_samples = roi_data["signal_end"] - roi_data["signal_start"]
-        rev_roi_fasta = roi_data["roi_fasta"][::-1]
-        roi_fasta = roi_data["roi_fasta"]
-    else:
+    if roi_data["signal_end"] is None or roi_data["signal_start"] is None:
         roi_length_in_samples = None
         translocation_rate = None
         rev_roi_fasta = None
         roi_fasta = None
+    else:
+        roi_fasta = roi_data["roi_fasta"]
+        if roi_fasta is None:
+            len_roi_fasta = 0
+            translocation_rate = None
+            rev_roi_fasta = None
+        else:
+            len_roi_fasta = len(roi_fasta)
+            if len_roi_fasta > 0:
+                translocation_rate = int(
+                    (roi_data["signal_end"] - roi_data["signal_start"]) / len_roi_fasta
+                )
+                rev_roi_fasta = roi_fasta[::-1]
+            else:
+                translocation_rate = None
+                rev_roi_fasta = None
+        roi_length_in_samples = roi_data["signal_end"] - roi_data["signal_start"]
 
     # Create a Div widget with text containing the values of important variables
     text = f"""

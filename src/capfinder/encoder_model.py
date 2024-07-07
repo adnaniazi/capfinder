@@ -2,46 +2,7 @@ from typing import List, Optional, Tuple
 
 import keras
 from keras import Model, layers
-from keras import ops as kops
-from keras.layers import Input
 from keras_tuner import HyperModel, HyperParameters
-
-
-def mcc(y_true: Input, y_pred: Input) -> Input:
-    """
-    Calculates the Matthews Correlation Coefficient (MCC) metric using Keras functions.
-
-    Args:
-        y_true: Ground truth labels (one-hot encoded, shape: [None]).
-        y_pred: Predicted probabilities (shape: [None, num_classes]).
-
-    Returns:
-        A tensor with the MCC value for each sample in the batch.
-    """
-    y_true = kops.cast(y_true, "float32")  # Cast y_true to float32 for calculations
-
-    # Reshape y_pred only if necessary
-    if kops.ndim(y_pred) == 1:
-        # Reshape y_pred to match the number of classes in y_true (one-hot encoded)
-        num_classes = keras.backend.int_shape(y_true)[-1]
-        y_pred = kops.reshape(y_pred, (-1, num_classes))
-
-    # Convert probabilities to binary predictions (optional)
-    # You can uncomment this line if you need binary predictions
-    # y_pred = K.cast(y_pred > 0.5, np.float32)
-
-    # True positives, negatives, etc. (using Keras functions)
-    tp = kops.mean(kops.equal(y_true, kops.argmax(y_pred, axis=-1)), axis=-1)
-    tn = kops.mean(kops.equal(1 - y_true, 1 - kops.max(y_pred, axis=-1)), axis=-1)
-    fp = kops.mean(kops.equal(y_true, 1 - kops.max(y_pred, axis=-1)), axis=-1)
-    fn = kops.mean(kops.equal(1 - y_true, kops.max(y_pred, axis=-1)), axis=-1)
-
-    # Calculate MCC
-    numerator = tp * tn - fp * fn
-    denominator = kops.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
-    mcc_value = numerator / (denominator + keras.config.epsilon())
-
-    return mcc_value
 
 
 def transformer_encoder(
@@ -195,10 +156,10 @@ class CapfinderHyperModel(HyperModel):
         model, encoder_model = build_model(
             input_shape=self.input_shape,
             head_size=hp.Int("head_size", min_value=32, max_value=512, step=32),
-            num_heads=hp.Int("num_heads", min_value=1, max_value=8, step=1),
+            num_heads=hp.Int("num_heads", min_value=4, max_value=64, step=1),
             ff_dim=hp.Int("ff_dim", min_value=4, max_value=16, step=4),
             num_transformer_blocks=hp.Int(
-                "num_transformer_blocks", min_value=2, max_value=8, step=1
+                "num_transformer_blocks", min_value=2, max_value=32, step=1
             ),
             mlp_units=[hp.Int("mlp_units_1", min_value=64, max_value=256, step=32)],
             n_classes=self.n_classes,
@@ -209,11 +170,16 @@ class CapfinderHyperModel(HyperModel):
         # Store the encoder model as an instance attribute for later access
         self.encoder_model = encoder_model
 
+        # Define learning rate as a hyperparameter
+        learning_rate = hp.Float(
+            "learning_rate", min_value=1e-4, max_value=1e-2, sampling="log"
+        )
+
         # Compile the model
         model.compile(
             loss="sparse_categorical_crossentropy",
-            optimizer="adam",
-            metrics=["sparse_categorical_accuracy", mcc],
+            optimizer=keras.optimizers.Adam(learning_rate=learning_rate),
+            metrics=["sparse_categorical_accuracy"],
         )
 
         # Return only the full model to Keras Tuner

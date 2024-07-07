@@ -16,6 +16,7 @@ import signal
 from dataclasses import dataclass
 from typing import Any, Dict, Union
 
+import numpy as np
 from loguru import logger
 from mpire import WorkerPool
 
@@ -312,13 +313,23 @@ def collate_bam_pod5_worker(
 
     # 9. Save the train/test and metadata information
     # We need to store train/test data only for the good reads
-    # TODO: make sure that the ROI signal array is not empty example: c4e4c483-1c19-4812-909e-0f7dbd3c8921,1,[]
-    if read_type == "good_reads":
-        worker_state["data_writer"].writerow(
-            [read_id, cap_class, roi_data["roi_signal"]]
-        )
-    # We need to store metadata for all reads (good and bad)
+    precision = 8
 
+    # Define a vectorized function for formatting (if applicable)
+    def format_value(x: float) -> str:
+        return f"{x:.{precision}f}"
+
+    vectorized_formatter = np.vectorize(format_value)
+
+    if read_type == "good_reads":
+        roi_signal: np.ndarray = roi_data["roi_signal"]
+        if roi_signal.size == 0:
+            read_type = "bad_reads"
+        else:
+            timeseries_str = ",".join(vectorized_formatter(roi_data["roi_signal"]))
+            worker_state["data_writer"].writerow([read_id, cap_class, timeseries_str])
+
+    # We need to store metadata for all reads (good and bad)
     if read_fasta is not None:
         read_length = len(read_fasta)
     else:
@@ -550,7 +561,7 @@ if __name__ == "__main__":
     reference = "GCTTTCGTTCGTCTCCGGACTTATCGCACCACCTATCCATCATCAGTACTGT"
     cap0_pos = 52
     train_or_test = "test"
-    output_dir = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/8_20231114_randomCAP1v3_rna004/test_OTE_vizs_jun2"
+    output_dir = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/8_20231114_randomCAP1v3_rna004/test_OTE_vizs_jun5"
     plot_signal = True
     cap_class = 1
     collate_bam_pod5(

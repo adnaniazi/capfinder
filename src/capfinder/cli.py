@@ -211,7 +211,7 @@ def make_train_dataset(
         --csv_dir /path/to/csv_dir \\
         --save_dir /path/to/save_dir \\
         --target_length 500 \\
-        --dtype float32 \\
+        --dtype float16 \\
         --n_workers 10
     """
     from typing import cast
@@ -276,6 +276,7 @@ def create_train_config(
             "batch_size": 64,
         },
         "model_save_dir": "/export/valenfs/data/processed_data/MinION/9_madcap/models/",
+        "model_type": "cnn_lstm",
     }
 
     with open(file_path, "w") as file:
@@ -304,6 +305,7 @@ def train_model(
     tune_params = config["tune_params"]
     train_params = config["train_params"]
     model_save_dir = config["model_save_dir"]
+    model_type = config["model_type"]
 
     # Run the training pipeline with the loaded parameters
     run_training_pipeline(
@@ -311,6 +313,7 @@ def train_model(
         tune_params=tune_params,
         train_params=train_params,
         model_save_dir=model_save_dir,
+        model_type=model_type,
     )
 
 

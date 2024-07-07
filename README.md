@@ -21,9 +21,22 @@ A package for decoding RNA cap types
 
 ## Installation
 
+# CPU installation
 ```sh
-pip install capfinder
+pip install capfinder[cpu]
 ```
+
+# GPU installation (CUDA 12)
+```sh
+pip install capfinder[gpu] "jax[cuda12]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+```
+
+# TPU installation
+```sh
+pip install capfinder[tpu] "jax[tpu]" -f https://storage.googleapis.com/jax-releases/libtpu_releases.html
+```
+
+
 
 ## Development
 
@@ -33,8 +46,21 @@ pip install capfinder
   * Python 3.7+
 * Create a virtual environment and install the dependencies
 
+# CPU installation
 ```sh
-poetry install
+poetry install --extras cpu
+```
+
+# GPU installation (CUDA 12)
+```sh
+poetry install --extras gpu
+poetry run pip install "jax[cuda12]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+```
+
+# TPU installation
+```sh
+poetry install --extras tpu
+poetry run pip install "jax[tpu]" -f https://storage.googleapis.com/jax-releases/libtpu_releases.html
 ```
 
 * Activate the virtual environment
