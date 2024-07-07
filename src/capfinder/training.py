@@ -356,6 +356,8 @@ def check_and_download_artifact(etl_params: dict) -> dict:
         version_or_alias=etl_params["remote_dataset_version"],
     )
 
+    current_art_version = f"{art.version.major}.{art.version.minor}.{art.version.patch}"
+
     version_file = os.path.join(etl_params["save_dir"], "artifact_version.txt")
 
     # Check if version file exists and read the stored version
@@ -363,9 +365,6 @@ def check_and_download_artifact(etl_params: dict) -> dict:
         with open(version_file) as f:
             stored_version = f.read().strip()
 
-        current_art_version = (
-            f"{art.version.major}.{art.version.minor}.{art.version.patch}"
-        )
         # If versions match, skip download
         if stored_version == current_art_version:
             print(
