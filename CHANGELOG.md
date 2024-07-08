@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 ### Fixed
+- Fixed encoder model hogging all available GPU memory and crashing
+
+## [0.1.6] - 2024-07-07
+### Fixed
 - Fixed bug with not writing dataset version to the file
 
 ## [0.1.5] - 2024-07-07
@@ -34,7 +38,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Added
 - Basic skeleton of the package and tested it
 
-[Unreleased]: https://github.com/adnaniazi/capfinder/compare/0.1.5...master
+[Unreleased]: https://github.com/adnaniazi/capfinder/compare/0.1.6...master
+[0.1.6]: https://github.com/adnaniazi/capfinder/compare/0.1.5...0.1.6
 [0.1.5]: https://github.com/adnaniazi/capfinder/compare/0.1.4...0.1.5
 [0.1.4]: https://github.com/adnaniazi/capfinder/compare/0.1.3...0.1.4
 [0.1.3]: https://github.com/adnaniazi/capfinder/compare/0.1.2...0.1.3
