@@ -10,15 +10,8 @@ import numpy as np
 import pandas as pd
 from comet_ml import Experiment  # Import CometML before keras
 from loguru import logger
-from ml_libs import (
-    BayesianOptimization,
-    Hyperband,
-    Objective,
-    RandomSearch,
-    jax,
-    keras,
-    tf,
-)
+from ml_libs import jax  # noqa
+from ml_libs import BayesianOptimization, Hyperband, Objective, RandomSearch, keras, tf
 from sklearn.metrics import confusion_matrix
 from tqdm import tqdm
 
