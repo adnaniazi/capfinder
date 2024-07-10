@@ -1,6 +1,6 @@
 from typing import Tuple
 
-import tensorflow as tf
+from ml_libs import tf
 
 
 def parse_features(line: tf.Tensor, num_timesteps: int) -> tf.Tensor:

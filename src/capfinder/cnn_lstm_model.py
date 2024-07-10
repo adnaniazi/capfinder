@@ -1,17 +1,18 @@
 import math
 
-from keras.layers import (
+from ml_libs import (
     LSTM,
+    Adam,
     BatchNormalization,
     Conv1D,
     Dense,
     Dropout,
+    HyperModel,
+    HyperParameters,
     Input,
     MaxPooling1D,
+    Model,
 )
-from keras.models import Model
-from keras.optimizers import Adam
-from keras_tuner import HyperModel, HyperParameters
 
 
 class CapfinderHyperModel(HyperModel):

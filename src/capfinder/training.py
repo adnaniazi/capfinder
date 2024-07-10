@@ -6,25 +6,26 @@ from datetime import datetime
 from typing import Dict, Literal, Optional, Tuple, Type, Union
 
 import comet_ml
-import jax
-from comet_ml import Experiment  # Import CometML before keras
-
-os.environ["KERAS_BACKEND"] = (
-    "jax"  # the placement is important, it cannot be after keras import
-)
-
-import keras
 import numpy as np
 import pandas as pd
-import tensorflow as tf
-from keras_tuner import BayesianOptimization, Hyperband, Objective, RandomSearch
+from comet_ml import Experiment  # Import CometML before keras
 from loguru import logger
+from ml_libs import (
+    BayesianOptimization,
+    Hyperband,
+    Objective,
+    RandomSearch,
+    jax,
+    keras,
+    tf,
+)
 from sklearn.metrics import confusion_matrix
 from tqdm import tqdm
 
 from capfinder.cnn_lstm_model import CapfinderHyperModel as CNNLSTMModel
 from capfinder.data_loader import load_datasets
 from capfinder.encoder_model import CapfinderHyperModel as EncoderModel
+from capfinder.resnet_model import ResNetTimeSeriesHyper as ResnetModel
 from capfinder.train_etl import train_etl
 from capfinder.utils import map_cap_int_to_name
 
@@ -32,14 +33,18 @@ from capfinder.utils import map_cap_int_to_name
 global stop_training
 stop_training = False
 
-ModelType = Literal["cnn_lstm", "encoder"]
+ModelType = Literal["cnn_lstm", "encoder", "resnet"]
 
 
-def get_model(model_type: ModelType) -> Type[CNNLSTMModel] | Type[EncoderModel]:
+def get_model(
+    model_type: ModelType,
+) -> Type[CNNLSTMModel] | Type[EncoderModel] | Type[ResnetModel]:
     if model_type == "cnn_lstm":
         return CNNLSTMModel
     elif model_type == "encoder":
         return EncoderModel
+    elif model_type == "resnet":
+        return ResnetModel
 
 
 def handle_interrupt(
@@ -459,7 +464,7 @@ def run_training_pipeline(
         project_name=tune_params["comet_project_name"] + "_" + model_type
     )
     tune_experiment_url = tune_experiment.url
-    if model_type not in ["cnn_lstm", "encoder"]:
+    if model_type not in ["cnn_lstm", "encoder", "resnet"]:
         raise ValueError("Invalid model type. Expected 'cnn_lstm' or 'encoder'.")
     model = get_model(model_type)
 
@@ -763,8 +768,8 @@ if __name__ == "__main__":
         "factor": 2,
         "batch_size": 4,
         "seed": 42,
-        "tuning_strategy": "hyperband",  # "hyperband" or "random_search" or "bayesian_optimization"
-        "overwrite": True,
+        "tuning_strategy": "bayesian_optimization",  # "hyperband" or "random_search" or "bayesian_optimization"
+        "overwrite": False,
     }
 
     train_params = {
@@ -777,7 +782,7 @@ if __name__ == "__main__":
     model_save_dir = (
         "/export/valenfs/data/processed_data/MinION/9_madcap/5_trained_models_202405/"
     )
-    model_type: ModelType = "encoder"  # cnn_lstm
+    model_type: ModelType = "resnet"  # cnn_lstm, resnet, encoder
 
     # Run the training pipeline
     run_training_pipeline(

@@ -42,6 +42,11 @@ repos:
         language: system
         types: [python]
         pass_filenames: false
+      - id: ruff
+        name: ruff
+        entry: poetry run ruff check
+        language: system
+        types: [python]
       - id: flake8
         name: flake8
         entry: poetry run flake8
