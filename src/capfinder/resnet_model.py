@@ -1,6 +1,6 @@
 from typing import Tuple
 
-from ml_libs import HyperModel, HyperParameters, Model, keras, layers, tf
+from capfinder.ml_libs import HyperModel, HyperParameters, Model, keras, layers, tf
 
 
 class ResNetBlockHyper(layers.Layer):

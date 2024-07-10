@@ -1,6 +1,6 @@
 from typing import List, Optional, Tuple
 
-from ml_libs import HyperModel, HyperParameters, Model, keras, layers
+from capfinder.ml_libs import HyperModel, HyperParameters, Model, keras, layers
 
 
 def transformer_encoder(

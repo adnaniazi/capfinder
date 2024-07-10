@@ -1,6 +1,6 @@
 from typing import Tuple
 
-from ml_libs import tf
+from capfinder.ml_libs import tf
 
 
 def parse_features(line: tf.Tensor, num_timesteps: int) -> tf.Tensor:

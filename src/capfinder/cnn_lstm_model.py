@@ -1,6 +1,6 @@
 import math
 
-from ml_libs import (
+from capfinder.ml_libs import (
     LSTM,
     Adam,
     BatchNormalization,
