@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 ### Fixed
+- Fixed issue with ml_libs module not found
+
+## [0.1.9] - 2024-07-10
+### Fixed
 - Fixing issue with ml_libs module not found
 
 ## [0.1.8] - 2024-07-10
@@ -46,7 +50,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Added
 - Basic skeleton of the package and tested it
 
-[Unreleased]: https://github.com/adnaniazi/capfinder/compare/0.1.8...master
+[Unreleased]: https://github.com/adnaniazi/capfinder/compare/0.1.9...master
+[0.1.9]: https://github.com/adnaniazi/capfinder/compare/0.1.8...0.1.9
 [0.1.8]: https://github.com/adnaniazi/capfinder/compare/0.1.7...0.1.8
 [0.1.7]: https://github.com/adnaniazi/capfinder/compare/0.1.6...0.1.7
 [0.1.6]: https://github.com/adnaniazi/capfinder/compare/0.1.5...0.1.6
