@@ -458,7 +458,9 @@ def run_training_pipeline(
     )
     tune_experiment_url = tune_experiment.url
     if model_type not in ["cnn_lstm", "encoder", "resnet"]:
-        raise ValueError("Invalid model type. Expected 'cnn_lstm' or 'encoder'.")
+        raise ValueError(
+            "Invalid model type. Expected 'cnn_lstm' or 'encoder' or 'renset'."
+        )
     model = get_model(model_type)
 
     hyper_model = model(
