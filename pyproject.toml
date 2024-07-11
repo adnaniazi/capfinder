@@ -59,26 +59,19 @@ pysam = "^0.22.1"
 typer = "^0.12.3"
 imbalanced-learn = "^0.12.3"
 
-# Base JAX dependency
-jax = {version = "^0.4.10", optional = true}
-
-# CPU installation
-jax_cpu = {version = "^0.4.10", optional = true}
-
-# GPU installation (CUDA 12)
-jax_gpu = {version = "^0.4.10", optional = true, source = "https://storage.googleapis.com/jax-releases/jax_cuda_releases.html"}
-
-# TPU installation
-jax_tpu = {version = "^0.4.10", optional = true, source = "https://storage.googleapis.com/jax-releases/libtpu_releases.html"}
+# JAX dependencies
+jax = {version = "*", optional = true}
 
 [tool.poetry.extras]
-cpu = ["jax_cpu"]
-gpu = ["jax_gpu"]
-tpu = ["jax_tpu"]
+cpu = ["jax"]
+gpu = ["jax"]
+tpu = ["jax"]
 
 [[tool.poetry.source]]
 name = "pypi"
 priority = "primary"
+
+
 
 [tool.poetry.dev-dependencies]
 autoflake = "*"
@@ -116,7 +109,7 @@ profile = "black"
 src_paths = ["src", "tests"]
 
 [tool.black]
-target-version = ["py37", "py38", "py39"]
+target-version = ["py310", "py311", "py312"]
 include = '\.pyi?$'
 
 [tool.pytest.ini_options]
@@ -148,3 +141,10 @@ ignore_missing_imports = true
 
 [tool.poetry.scripts]
 capfinder = "capfinder.cli:app"
+
+
+#command1 = "package:module1:function1"
+#command2 = "package:module2:function2"
+#command3 = "package:module3:function3"
+
+[tool.setuptools_scm]
