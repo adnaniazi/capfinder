@@ -13,6 +13,9 @@ from loguru import logger
 from sklearn.metrics import confusion_matrix
 from tqdm import tqdm
 
+from capfinder.attention_cnnlstm_model import (
+    CapfinderHyperModel as AttentionCNNLSTMModel,
+)
 from capfinder.cnn_lstm_model import CapfinderHyperModel as CNNLSTMModel
 from capfinder.data_loader import load_datasets
 from capfinder.encoder_model import CapfinderHyperModel as EncoderModel
@@ -33,18 +36,25 @@ from capfinder.utils import map_cap_int_to_name
 global stop_training
 stop_training = False
 
-ModelType = Literal["cnn_lstm", "encoder", "resnet"]
+ModelType = Literal["attention_cnn_lstm", "cnn_lstm", "encoder", "resnet"]
 
 
 def get_model(
     model_type: ModelType,
-) -> Type[CNNLSTMModel] | Type[EncoderModel] | Type[ResnetModel]:
+) -> (
+    Type[AttentionCNNLSTMModel]
+    | Type[CNNLSTMModel]
+    | Type[EncoderModel]
+    | Type[ResnetModel]
+):
     if model_type == "cnn_lstm":
         return CNNLSTMModel
     elif model_type == "encoder":
         return EncoderModel
     elif model_type == "resnet":
         return ResnetModel
+    elif model_type == "attention_cnn_lstm":
+        return AttentionCNNLSTMModel
 
 
 def handle_interrupt(
@@ -278,7 +288,7 @@ def initialize_tuner(
             overwrite=tune_params["overwrite"],
             directory=model_save_dir,
             seed=tune_params["seed"],
-            project_name=tune_params["comet_project_name"] + "_" + model_type,
+            project_name=tune_params["comet_project_name"],
         )
     elif tuning_strategy == "bayesian_optimization":
         tuner = BayesianOptimization(
@@ -288,7 +298,7 @@ def initialize_tuner(
             overwrite=tune_params["overwrite"],
             directory=model_save_dir,
             seed=tune_params["seed"],
-            project_name=tune_params["comet_project_name"] + "_" + model_type,
+            project_name=tune_params["comet_project_name"],
         )
     elif tuning_strategy == "random_search":
         tuner = RandomSearch(
@@ -298,7 +308,7 @@ def initialize_tuner(
             overwrite=tune_params["overwrite"],
             directory=model_save_dir,
             seed=tune_params["seed"],
-            project_name=tune_params["comet_project_name"] + "_" + model_type,
+            project_name=tune_params["comet_project_name"],
         )
     return tuner
 
@@ -459,16 +469,22 @@ def run_training_pipeline(
     #############        TUNE          ##############
     #################################################
     """
-
-    tune_experiment = initialize_comet_ml_experiment(
-        project_name=tune_params["comet_project_name"] + "_" + model_type
-    )
-    tune_experiment_url = tune_experiment.url
-    if model_type not in ["cnn_lstm", "encoder", "resnet"]:
+    if model_type not in ["attention_cnn_lstm", "cnn_lstm", "encoder", "resnet"]:
         raise ValueError(
-            "Invalid model type. Expected 'cnn_lstm' or 'encoder' or 'renset'."
+            "Invalid model type. Expected 'attention_cnn_lstm', 'cnn_lstm' or 'encoder' or 'renset'."
         )
     model = get_model(model_type)
+    tune_params["comet_project_name"] = (
+        tune_params["comet_project_name"] + "_" + model_type
+    )
+    train_params["comet_project_name"] = (
+        train_params["comet_project_name"] + "_" + model_type
+    )
+
+    tune_experiment = initialize_comet_ml_experiment(
+        project_name=tune_params["comet_project_name"]
+    )
+    tune_experiment_url = tune_experiment.url
 
     hyper_model = model(
         input_shape=(etl_params["target_length"], 1), n_classes=etl_params["n_classes"]
@@ -549,7 +565,7 @@ def run_training_pipeline(
     """
 
     train_experiment = initialize_comet_ml_experiment(
-        project_name=train_params["comet_project_name"] + "_" + model_type
+        project_name=train_params["comet_project_name"]
     )
     comet_callback = train_experiment.get_callback(framework="keras")
 
@@ -766,12 +782,12 @@ if __name__ == "__main__":
         "comet_project_name": "capfinder_tfr_tune-delete",
         "patience": 0,
         "max_epochs_hpt": 3,
-        "max_trials": 5,  # for random_search, and bayesian_optimization. For hyperband this has no effect
+        "max_trials": 10,  # for random_search, and bayesian_optimization. For hyperband this has no effect
         "factor": 2,
         "batch_size": 4,
         "seed": 42,
         "tuning_strategy": "bayesian_optimization",  # "hyperband" or "random_search" or "bayesian_optimization"
-        "overwrite": False,
+        "overwrite": True,
     }
 
     train_params = {
@@ -784,7 +800,9 @@ if __name__ == "__main__":
     model_save_dir = (
         "/export/valenfs/data/processed_data/MinION/9_madcap/5_trained_models_202405/"
     )
-    model_type: ModelType = "resnet"  # cnn_lstm, resnet, encoder
+    model_type: ModelType = (
+        "attention_cnn_lstm"  # attention_cnn_lstm, cnn_lstm, resnet, encoder
+    )
 
     # Run the training pipeline
     run_training_pipeline(
