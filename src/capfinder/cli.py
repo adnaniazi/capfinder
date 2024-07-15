@@ -61,7 +61,7 @@ def extract_cap_signal(
     - 4 represents TMG Cap \n
     - 5 represents NAD Cap \n
     - 6 represents FAD Cap \n
-    - -99 represents and unknown cap(s). \n
+    - -99 represents an unknown cap(s). \n
     """,
         ),
     ] = -99,

@@ -17,6 +17,11 @@ from capfinder.attention_cnnlstm_model import (
     CapfinderHyperModel as AttentionCNNLSTMModel,
 )
 from capfinder.cnn_lstm_model import CapfinderHyperModel as CNNLSTMModel
+from capfinder.cyclic_learing_rate import (
+    CometLRLogger,
+    CustomProgressCallback,
+    CyclicLR,
+)
 from capfinder.data_loader import load_datasets
 from capfinder.encoder_model import CapfinderHyperModel as EncoderModel
 from capfinder.ml_libs import jax  # noqa
@@ -592,11 +597,20 @@ def run_training_pipeline(
         restore_best_weights=True,
     )
 
-    reduce_lr = keras.callbacks.ReduceLROnPlateau(
-        monitor="val_loss", factor=0.5, patience=5, verbose=1, mode="min", min_lr=1e-6
-    )
+    # reduce_lr = keras.callbacks.ReduceLROnPlateau(
+    #     monitor="val_loss", factor=0.5, patience=5, verbose=1, mode="min", min_lr=1e-6
+    # )
 
-    # Callbacks
+    # Define the CLR callback
+    clr = CyclicLR(
+        base_lr=1e-4,
+        max_lr=1e-2,
+        step_size=train_size * 3,  # run 3 cycles in 18 epochs
+        mode="triangular2",
+    )
+    custom_progress = CustomProgressCallback()
+    comet_lr_logger = CometLRLogger(train_experiment)
+
     best_model_path = os.path.join(model_save_dir, "best_model_weights.weights.h5")
     model_checkpoint = keras.callbacks.ModelCheckpoint(
         best_model_path,
@@ -615,7 +629,10 @@ def run_training_pipeline(
         batch_size=train_params["batch_size"],
         callbacks=[
             early_stopping,
-            reduce_lr,
+            # reduce_lr,
+            clr,
+            custom_progress,
+            comet_lr_logger,
             comet_callback,
             model_checkpoint,
             interrupt_callback,
@@ -782,7 +799,7 @@ if __name__ == "__main__":
         "comet_project_name": "capfinder_tfr_tune-delete",
         "patience": 0,
         "max_epochs_hpt": 3,
-        "max_trials": 10,  # for random_search, and bayesian_optimization. For hyperband this has no effect
+        "max_trials": 1,  # for random_search, and bayesian_optimization. For hyperband this has no effect
         "factor": 2,
         "batch_size": 4,
         "seed": 42,
@@ -793,16 +810,14 @@ if __name__ == "__main__":
     train_params = {
         "comet_project_name": "capfinder_tfr_train-delete",
         "patience": 20,
-        "max_epochs_final_model": 1,
+        "max_epochs_final_model": 100,
         "batch_size": 4,
     }
 
     model_save_dir = (
         "/export/valenfs/data/processed_data/MinION/9_madcap/5_trained_models_202405/"
     )
-    model_type: ModelType = (
-        "attention_cnn_lstm"  # attention_cnn_lstm, cnn_lstm, resnet, encoder
-    )
+    model_type: ModelType = "cnn_lstm"  # attention_cnn_lstm, cnn_lstm, resnet, encoder
 
     # Run the training pipeline
     run_training_pipeline(

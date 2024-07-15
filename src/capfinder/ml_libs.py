@@ -9,6 +9,7 @@ os.environ["KERAS_BACKEND"] = "jax"
 import keras  # noqa
 import keras.ops as K  # noqa
 from keras import layers  # noqa
+from keras.callbacks import Callback  # noqa
 from keras.layers import LSTM  # noqa
 from keras.layers import BatchNormalization  # noqa
 from keras.layers import Conv1D  # noqa
