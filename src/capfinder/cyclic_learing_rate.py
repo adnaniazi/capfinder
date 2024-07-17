@@ -213,3 +213,86 @@ class CyclicLR(Callback):
             self.history.setdefault(k, []).append(v)
 
         self.model.optimizer.learning_rate.assign(self.clr())
+
+
+class SGDRScheduler(Callback):
+    """
+    Cosine annealing learning rate scheduler with periodic restarts.
+
+    Args:
+        min_lr: The lower bound of the learning rate range for the experiment.
+        max_lr: The upper bound of the learning rate range for the experiment.
+        steps_per_epoch: Number of mini-batches in the dataset.
+        lr_decay: Reduce the max_lr after the completion of each cycle.
+        cycle_length: Initial number of epochs in a cycle.
+        mult_factor: Scale epochs_to_restart after each full cycle completion.
+    """
+
+    def __init__(
+        self,
+        min_lr: float,
+        max_lr: float,
+        steps_per_epoch: int,
+        lr_decay: float = 1.0,
+        cycle_length: int = 10,
+        mult_factor: float = 2.0,
+    ) -> None:
+        super().__init__()
+        self.min_lr: float = min_lr
+        self.max_lr: float = max_lr
+        self.lr_decay: float = lr_decay
+        self.batch_since_restart: int = 0
+        self.next_restart: int = cycle_length
+        self.steps_per_epoch: int = steps_per_epoch
+        self.cycle_length: float = cycle_length
+        self.mult_factor: float = mult_factor
+        self.history: Dict[str, list] = {}
+        self.best_weights: Optional[list] = None
+
+    def clr(self) -> float:
+        """Calculate the learning rate."""
+        fraction_to_restart: float = self.batch_since_restart / (
+            self.steps_per_epoch * self.cycle_length
+        )
+        lr: float = self.min_lr + 0.5 * (self.max_lr - self.min_lr) * (
+            1 + np.cos(fraction_to_restart * np.pi)
+        )
+        return float(lr)
+
+    def set_lr(self, lr: float) -> None:
+        """Set the learning rate for the optimizer."""
+        self.model.optimizer.learning_rate.assign(lr)
+
+    def get_lr(self) -> float:
+        """Get the current learning rate."""
+        return float(self.model.optimizer.learning_rate.value)
+
+    def on_train_begin(self, logs: Optional[Dict[str, Any]] = None) -> None:
+        """Initialize the learning rate to the maximum value at the start of training."""
+        logs = logs or {}
+        self.set_lr(self.max_lr)
+
+    def on_batch_end(self, batch: int, logs: Optional[Dict[str, Any]] = None) -> None:
+        """Record previous batch statistics and update the learning rate."""
+        logs = logs or {}
+        self.history.setdefault("lr", []).append(self.get_lr())
+        for k, v in logs.items():
+            self.history.setdefault(k, []).append(v)
+
+        self.batch_since_restart += 1
+        new_lr: float = self.clr()
+        self.set_lr(new_lr)
+
+    def on_epoch_end(self, epoch: int, logs: Optional[Dict[str, Any]] = None) -> None:
+        """Check for end of current cycle, apply restarts when necessary."""
+        if epoch + 1 == self.next_restart:
+            self.batch_since_restart = 0
+            self.cycle_length = np.ceil(self.cycle_length * self.mult_factor)
+            self.next_restart += int(self.cycle_length)
+            self.max_lr *= self.lr_decay
+            self.best_weights = self.model.get_weights()
+
+    def on_train_end(self, logs: Optional[Dict[str, Any]] = None) -> None:
+        """Set weights to the values from the end of the most recent cycle for best performance."""
+        if self.best_weights is not None:
+            self.model.set_weights(self.best_weights)

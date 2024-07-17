@@ -20,7 +20,7 @@ from capfinder.cnn_lstm_model import CapfinderHyperModel as CNNLSTMModel
 from capfinder.cyclic_learing_rate import (
     CometLRLogger,
     CustomProgressCallback,
-    CyclicLR,
+    SGDRScheduler,
 )
 from capfinder.data_loader import load_datasets
 from capfinder.encoder_model import CapfinderHyperModel as EncoderModel
@@ -602,12 +602,23 @@ def run_training_pipeline(
     # )
 
     # Define the CLR callback
-    clr = CyclicLR(
-        base_lr=1e-4,
+    # clr = CyclicLR(
+    #     base_lr=1e-3,
+    #     max_lr=5e-2,
+    #     step_size=train_size * 8,  # run 3 cycles in 18 epochs
+    #     mode="triangular2",
+    # )
+
+    # Create the scheduler
+    sgdr_scheduler = SGDRScheduler(
+        min_lr=5e-3,
         max_lr=1e-2,
-        step_size=train_size * 3,  # run 3 cycles in 18 epochs
-        mode="triangular2",
+        steps_per_epoch=train_size,
+        lr_decay=0.9,
+        cycle_length=5,
+        mult_factor=1.5,
     )
+
     custom_progress = CustomProgressCallback()
     comet_lr_logger = CometLRLogger(train_experiment)
 
@@ -630,7 +641,8 @@ def run_training_pipeline(
         callbacks=[
             early_stopping,
             # reduce_lr,
-            clr,
+            # clr,
+            sgdr_scheduler,
             custom_progress,
             comet_lr_logger,
             comet_callback,
@@ -809,7 +821,7 @@ if __name__ == "__main__":
 
     train_params = {
         "comet_project_name": "capfinder_tfr_train-delete",
-        "patience": 20,
+        "patience": 120,
         "max_epochs_final_model": 100,
         "batch_size": 4,
     }
