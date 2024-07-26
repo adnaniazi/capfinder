@@ -25,7 +25,6 @@ from capfinder.bam import get_total_records, process_bam_records
 from capfinder.find_ote_test import process_read as extract_roi_coords_test
 from capfinder.find_ote_train import process_read as extract_roi_coords_train
 from capfinder.index import fetch_filepath_using_filename, index
-from capfinder.logger_config import configure_logger
 from capfinder.plot import plot_roi_signal
 from capfinder.process_pod5 import (
     extract_roi_signal,
@@ -470,8 +469,12 @@ def collate_bam_pod5(
     --------
     None
     """
+    os.makedirs(output_dir, exist_ok=True)
+
     # 1. Initial configuration
-    configure_logger(output_dir)
+    # configure_logger(output_dir)
+    # configure_prefect_logging()
+
     logger.info("Computing BAM total records...")
     num_bam_records = get_total_records(bam_filepath)
     logger.info(f"Found {num_bam_records} BAM records!")
@@ -510,7 +513,7 @@ def collate_bam_pod5(
                 csvfile.close()
         exit(1)  # Exit the program
 
-    signal.signal(signal.SIGINT, signal_handler)  # type: ignore
+    # signal.signal(signal.SIGINT, signal_handler)  # type: ignore
 
     # 6. Process the BAM file row-by-row using multiple processes
     try:
@@ -550,7 +553,7 @@ def collate_bam_pod5(
 
         # Merge the data and metadata CSV files
         db_handler.merge_data()
-        logger.success("All steps fininshed successfully!")
+        logger.info("Cap signal data extracted successfully!")
     return None
 
 

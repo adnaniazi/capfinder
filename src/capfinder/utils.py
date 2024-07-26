@@ -6,6 +6,7 @@ Date: 2024-02-28
 """
 
 import gzip
+import shutil
 import sqlite3
 from typing import IO, Tuple, Type, Union, cast
 
@@ -96,3 +97,60 @@ def get_dtype(dtype: str) -> Type[np.floating]:
         dt = np.float32
 
     return cast(Type[np.floating], dt)  # Cast dt to the expected type
+
+
+def get_terminal_width() -> int:
+    """
+    Get the width of the terminal.
+
+    Returns:
+        int: The width of the terminal in columns. Defaults to 80 if not available.
+    """
+    return shutil.get_terminal_size((80, 20)).columns
+
+
+def log_header(text: str) -> None:
+    """
+    Log a centered header surrounded by '=' characters.
+
+    Args:
+        text (str): The text to be displayed in the header.
+
+    Returns:
+        None
+    """
+    width = get_terminal_width()
+    header = f"\n{'=' * width}\n{text.center(width)}\n{'=' * width}"
+    logger.info(header)
+
+
+def log_step(step_num: int, total_steps: int, description: str) -> None:
+    """
+    Log a step in a multi-step process.
+
+    Args:
+        step_num (int): The current step number.
+        total_steps (int): The total number of steps.
+        description (str): A description of the current step.
+
+    Returns:
+        None
+    """
+    width = get_terminal_width()
+    step = (
+        f"\n{'-' * width}\nStep {step_num}/{total_steps}: {description}\n{'-' * width}"
+    )
+    logger.info(step)
+
+
+def log_substep(text: str) -> None:
+    """
+    Log a substep or bullet point.
+
+    Args:
+        text (str): The text of the substep to be logged.
+
+    Returns:
+        None
+    """
+    logger.info(f"  • {text}")

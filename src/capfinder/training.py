@@ -17,11 +17,7 @@ from capfinder.attention_cnnlstm_model import (
     CapfinderHyperModel as AttentionCNNLSTMModel,
 )
 from capfinder.cnn_lstm_model import CapfinderHyperModel as CNNLSTMModel
-from capfinder.cyclic_learing_rate import (
-    CometLRLogger,
-    CustomProgressCallback,
-    SGDRScheduler,
-)
+from capfinder.cyclic_learing_rate import CometLRLogger, CustomProgressCallback
 from capfinder.data_loader import load_datasets
 from capfinder.encoder_model import CapfinderHyperModel as EncoderModel
 from capfinder.ml_libs import jax  # noqa
@@ -597,9 +593,9 @@ def run_training_pipeline(
         restore_best_weights=True,
     )
 
-    # reduce_lr = keras.callbacks.ReduceLROnPlateau(
-    #     monitor="val_loss", factor=0.5, patience=5, verbose=1, mode="min", min_lr=1e-6
-    # )
+    reduce_lr = keras.callbacks.ReduceLROnPlateau(
+        monitor="val_loss", factor=0.5, patience=5, verbose=1, mode="min", min_lr=1e-6
+    )
 
     # Define the CLR callback
     # clr = CyclicLR(
@@ -609,15 +605,15 @@ def run_training_pipeline(
     #     mode="triangular2",
     # )
 
-    # Create the scheduler
-    sgdr_scheduler = SGDRScheduler(
-        min_lr=5e-3,
-        max_lr=1e-2,
-        steps_per_epoch=train_size,
-        lr_decay=0.9,
-        cycle_length=5,
-        mult_factor=1.5,
-    )
+    # # Create the scheduler
+    # sgdr_scheduler = SGDRScheduler(
+    #     min_lr=5e-3,
+    #     max_lr=1e-2,
+    #     steps_per_epoch=train_size,
+    #     lr_decay=0.9,
+    #     cycle_length=5,
+    #     mult_factor=1.5,
+    # )
 
     custom_progress = CustomProgressCallback()
     comet_lr_logger = CometLRLogger(train_experiment)
@@ -640,9 +636,9 @@ def run_training_pipeline(
         batch_size=train_params["batch_size"],
         callbacks=[
             early_stopping,
-            # reduce_lr,
+            reduce_lr,
             # clr,
-            sgdr_scheduler,
+            # sgdr_scheduler,
             custom_progress,
             comet_lr_logger,
             comet_callback,

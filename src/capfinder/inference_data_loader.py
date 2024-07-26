@@ -1,5 +1,7 @@
 from typing import Callable
 
+from loguru import logger
+
 from capfinder.ml_libs import tf
 
 
@@ -86,7 +88,7 @@ def load_dataset(
     return dataset
 
 
-def load_inference_dataset(
+def make_batched_dataset(
     x_path: str,
     y_path: str,
     read_id_path: str,
@@ -124,5 +126,5 @@ def load_inference_dataset(
     dataset = dataset.padded_batch(
         batch_size, padded_shapes=([num_timesteps, 1], [], []), drop_remainder=False
     ).prefetch(buffer_size=tf.data.AUTOTUNE)
-
+    logger.info("Batched dataset generated.")
     return dataset

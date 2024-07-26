@@ -1,7 +1,10 @@
 import json
+import os
+import shlex
+import sys
 import textwrap
 from importlib.metadata import version
-from typing import Optional
+from typing import List, Optional
 
 import typer
 from loguru import logger
@@ -218,14 +221,14 @@ def make_train_dataset(
 
     from capfinder.train_etl import DtypeLiteral, train_etl
 
-    dt: DtypeLiteral = "float32"
+    dt: DtypeLiteral = "float16"
     if dtype in {"float16", "float32", "float64"}:
         dt = cast(
             DtypeLiteral, dtype
         )  # This is safe because input_str must be one of the Literal values
     else:
         logger.warning(
-            f"Invalid dtype literal: {dtype}. Allowed values are 'float16', 'float32', 'float64'. Using 'float32' as default."
+            f"Invalid dtype literal: {dtype}. Allowed values are 'float16', 'float32', 'float64'. Using 'float16' as default."
         )
 
     train_etl(
@@ -315,6 +318,194 @@ def train_model(
         model_save_dir=model_save_dir,
         model_type=model_type,
     )
+
+
+@app.command()
+def predict_cap_types(
+    bam_filepath: Annotated[
+        str, typer.Option("--bam_filepath", "-b", help="Path to the BAM file")
+    ] = "",
+    pod5_dir: Annotated[
+        str,
+        typer.Option(
+            "--pod5_dir", "-p", help="Path to directory containing POD5 files"
+        ),
+    ] = "",
+    output_dir: Annotated[
+        str,
+        typer.Option(
+            "--output_dir",
+            "-o",
+            help="Path to the output directory for prediction results and logs",
+        ),
+    ] = "",
+    reference: Annotated[
+        str,
+        typer.Option("--reference", "-r", help="Reference Sequence (5' -> 3')"),
+    ] = "GCTTTCGTTCGTCTCCGGACTTATCGCACCACCTATCCATCATCAGTACTGT",
+    cap_n1_pos0: Annotated[
+        int,
+        typer.Option(
+            "--cap_n1_pos0",
+            "-p",
+            help="0-based index of 1st nucleotide (N1) of cap in the reference",
+        ),
+    ] = 52,
+    n_cpus: Annotated[
+        int,
+        typer.Option(
+            "--n_cpus", "-n", help="Number of CPUs to use for parallel processing"
+        ),
+    ] = 1,
+    dtype: Annotated[
+        str,
+        typer.Option(
+            "--dtype",
+            "-d",
+            help="Data type for model input. Valid values are 'float16', 'float32', or 'float64'.",
+        ),
+    ] = "float16",
+    target_length: Annotated[
+        int,
+        typer.Option(
+            "--target_length",
+            "-t",
+            help="Number of signal points in cap signal to consider",
+        ),
+    ] = 500,
+    batch_size: Annotated[
+        int,
+        typer.Option("--batch_size", "-bs", help="Batch size for model inference"),
+    ] = 128,
+    plot_signal: Annotated[
+        bool,
+        typer.Option(
+            "--plot_signal/--no_plot_signal",
+            help="Whether to plot extracted cap signal or not",
+        ),
+    ] = False,
+    debug_code: Annotated[
+        bool,
+        typer.Option(
+            "--debug/--no-debug",
+            help="Enable debug mode for more detailed logging",
+        ),
+    ] = False,
+    refresh_cache: Annotated[
+        bool,
+        typer.Option(
+            "--refresh-cache/--no-refresh-cache",
+            help="Refresh the cache for intermediate results",
+        ),
+    ] = False,
+) -> None:
+    """
+    Predicts RNA cap types using BAM and POD5 files.
+
+    Example command:
+        capfinder predict-cap-types \\
+        --bam_filepath /path/to/sorted.bam \\
+        --pod5_dir /path/to/pod5_dir \\
+        --output_dir /path/to/output_dir \\
+        --batch_size 256 \\
+        --no_plot_signal \\
+        --no-debug \\
+        --no-refresh-cache
+
+    Complete command (only if you know what you are doing):
+        capfinder predict-cap-types \\
+        --bam_filepath /path/to/sorted.bam \\
+        --pod5_dir /path/to/pod5_dir \\
+        --output_dir /path/to/output_dir \\
+        --reference GCTTTCGTTCGTCTCCGGACTTATCGCACCACCTATCCATCATCAGTACTGT \\
+        --cap_n1_pos0 52 \\
+        --n_cpus 10 \\
+        --dtype float16 \\
+        --target_length 500 \\
+        --batch_size 256 \\
+        --no_plot_signal \\
+        --no-debug \\
+        --no-refresh-cache
+    """
+    from typing import cast
+
+    from capfinder.inference import predict_cap_types
+    from capfinder.train_etl import DtypeLiteral
+
+    dt: DtypeLiteral = "float16"
+    if dtype in {"float16", "float32", "float64"}:
+        dt = cast(
+            DtypeLiteral, dtype
+        )  # This is safe because input_str must be one of the Literal values
+    else:
+        logger.warning(
+            f"Invalid dtype literal: {dtype}. Allowed values are 'float16', 'float32', 'float64'. Using 'float16' as default."
+        )
+
+    predict_cap_types(
+        bam_filepath=bam_filepath,
+        pod5_dir=pod5_dir,
+        num_cpus=n_cpus,
+        output_dir=output_dir,
+        dtype=dt,
+        reference=reference,
+        cap0_pos=cap_n1_pos0,
+        train_or_test="test",
+        plot_signal=plot_signal,
+        cap_class=-99,
+        target_length=target_length,
+        batch_size=batch_size,
+        debug_code=debug_code,
+        refresh_cache=refresh_cache,
+    )
+
+
+@app.callback(invoke_without_command=True)
+def callback(ctx: typer.Context) -> None:
+    if ctx.invoked_subcommand is not None and not any(
+        arg in sys.argv for arg in ["--help", "-h"]
+    ):
+        # ANSI color codes
+        grey = "\033[90m"
+        reset = "\033[0m"
+
+        # Get the full path of the Python executable
+        python_path = sys.executable
+
+        def color_path(arg: str) -> str:
+            return (
+                f"{grey}{arg}{reset}" if os.path.exists(os.path.dirname(arg)) else arg
+            )
+
+        # Reconstruct the full command with the Python path
+        command_parts: List[str] = [f"{color_path(shlex.quote(python_path))} -m"]
+
+        # Group 'capfinder' with the subcommand
+        if len(sys.argv) > 2:
+            command_parts.append(f"capfinder {sys.argv[1]}")
+            current_arg = None
+            for arg in sys.argv[2:]:
+                if arg.startswith("--"):
+                    if current_arg:
+                        command_parts.append(current_arg)
+                    current_arg = arg
+                else:
+                    if current_arg:
+                        current_arg += f" {color_path(shlex.quote(arg))}"
+                        command_parts.append(current_arg)
+                        current_arg = None
+                    else:
+                        command_parts.append(color_path(shlex.quote(arg)))
+            if current_arg:
+                command_parts.append(current_arg)
+        else:
+            command_parts.append("capfinder")
+            command_parts.extend(color_path(shlex.quote(arg)) for arg in sys.argv[1:])
+
+        # Format the command with grouped arguments per line, adding backslashes
+        formatted_command = " \\\n".join(command_parts)
+
+        logger.info(f"You have issued the following command:\n{formatted_command}")
 
 
 if __name__ == "__main__":
