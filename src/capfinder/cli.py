@@ -11,6 +11,7 @@ from loguru import logger
 from typing_extensions import Annotated
 
 version_info = version("capfinder")
+formatted_command_global = None
 
 app = typer.Typer(
     help=f"""Capfinder v{version_info}: A Python package for decoding RNA cap types using an encoder-based deep learning model.\n
@@ -95,7 +96,7 @@ def extract_cap_signal(
             ├── A CSV file (data__cap_x.csv) containing the extracted ROI signal data.\n
             ├── A CSV file (metadata__cap_x.csv) containing the complete metadata information.\n
             ├── A log file (capfinder_vXYZ_datatime.log) containing the logs of the program.\n
-            └── (Optional) plots directory containing cap signal plots, if plot_signal is set to True.\n
+            └── (Optional) plots directory containing cap signal plots, if --plot-signal is used.\n
             \u200B    ├── good_reads: Directory that contains the plots for the good reads.\n
             \u200B    ├── bad_reads: Directory that contains the plots for the bad reads.\n
             \u200B    └── plotpaths.csv: CSV file containing the paths to the plots based on the read ID.\n"""
@@ -111,7 +112,7 @@ def extract_cap_signal(
     plot_signal: Annotated[
         Optional[bool],
         typer.Option(
-            "--plot_signal/--no_plot_signal",
+            "--plot-signal/--no-plot-signal",
             help="Whether to plot extracted cap signal or not",
         ),
     ] = None,
@@ -380,7 +381,7 @@ def predict_cap_types(
     plot_signal: Annotated[
         bool,
         typer.Option(
-            "--plot_signal/--no_plot_signal",
+            "--plot-signal/--no-plot-signal",
             help="Whether to plot extracted cap signal or not",
         ),
     ] = False,
@@ -442,6 +443,8 @@ def predict_cap_types(
             f"Invalid dtype literal: {dtype}. Allowed values are 'float16', 'float32', 'float64'. Using 'float16' as default."
         )
 
+    global formatted_command_global
+
     predict_cap_types(
         bam_filepath=bam_filepath,
         pod5_dir=pod5_dir,
@@ -457,11 +460,15 @@ def predict_cap_types(
         batch_size=batch_size,
         debug_code=debug_code,
         refresh_cache=refresh_cache,
+        formatted_command=formatted_command_global,  # Pass the formatted command here
     )
+    logger.success("Finished predicting cap types!")
 
 
 @app.callback(invoke_without_command=True)
 def callback(ctx: typer.Context) -> None:
+    global formatted_command_global
+
     if ctx.invoked_subcommand is not None and not any(
         arg in sys.argv for arg in ["--help", "-h"]
     ):
@@ -503,9 +510,8 @@ def callback(ctx: typer.Context) -> None:
             command_parts.extend(color_path(shlex.quote(arg)) for arg in sys.argv[1:])
 
         # Format the command with grouped arguments per line, adding backslashes
-        formatted_command = " \\\n".join(command_parts)
-
-        logger.info(f"You have issued the following command:\n{formatted_command}")
+        formatted_command_global = " \\\n".join(command_parts)
+        return None
 
 
 if __name__ == "__main__":

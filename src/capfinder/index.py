@@ -150,7 +150,7 @@ def index(pod5_path: str, output_dir: str) -> None:
         unit="files",
     ):
         write_database(data, cursor, conn)
-    logger.success("Indexing complete")
+    logger.info("Indexing complete")
     conn.close()
 
 

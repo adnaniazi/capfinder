@@ -158,19 +158,20 @@ class DatabaseHandler:
         # Close the metadata file
         worker_state["metadata_file"].close()
 
-    def merge_data(self) -> None:
+    def merge_data(self) -> tuple[str, str]:
         """Merges the data and metadata CSV files."""
-        self._merge_csv_files(data_or_metadata="data")
-        self._merge_csv_files(data_or_metadata="metadata")
+        data_path = self._merge_csv_files(data_or_metadata="data")
+        metadata_path = self._merge_csv_files(data_or_metadata="metadata")
+        return data_path, metadata_path
 
-    def _merge_csv_files(self, data_or_metadata: str) -> None:
+    def _merge_csv_files(self, data_or_metadata: str) -> str:
         """Merges the data and metadata CSV files.
 
         Args:
             data_or_metadata (str): Whether to merge data or metadata CSV files.
 
         Returns:
-            None
+            str: Path to the merged CSV file.
         """
         cap_name = map_cap_int_to_name(self.cap_class)
         data_path = os.path.join(self.output_dir, f"{data_or_metadata}__{cap_name}.csv")
@@ -200,6 +201,7 @@ class DatabaseHandler:
                         writer.writerow(row)
                 os.remove(ind_csv_file)
         logger.info(f"Successfully merged {data_or_metadata} CSV file.")
+        return data_path
 
 
 def collate_bam_pod5_worker(
@@ -412,7 +414,7 @@ def collate_bam_pod5(
     train_or_test: str,
     plot_signal: bool,
     output_dir: str,
-) -> None:
+) -> tuple[str, str]:
     """
     Collates information from the BAM file and the POD5 files,
     aligns OTE to extracts the signal for the
@@ -467,7 +469,8 @@ def collate_bam_pod5(
 
     Returns:
     --------
-    None
+    tuple[str, str]: Paths to the data and metadata CSV files.
+
     """
     os.makedirs(output_dir, exist_ok=True)
 
@@ -552,9 +555,9 @@ def collate_bam_pod5(
                 csvfile.close()
 
         # Merge the data and metadata CSV files
-        db_handler.merge_data()
+        data_path, metadata_path = db_handler.merge_data()
         logger.info("Cap signal data extracted successfully!")
-    return None
+    return data_path, metadata_path
 
 
 if __name__ == "__main__":

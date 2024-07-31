@@ -10,8 +10,6 @@ from importlib.metadata import version
 import loguru
 from loguru import logger
 
-from capfinder.utils import log_header
-
 
 def get_version() -> str:
     """Get the version of the app from pyproject.toml."""
@@ -56,7 +54,6 @@ def configure_logger(new_log_directory: str = "", show_location: bool = True) ->
     logger.add(log_filepath, format=log_format, colorize=True)
     logger.add(sys.stdout, format=log_format, colorize=True)
 
-    log_header(f"Using Capfinder v{app_version}")
     return log_filepath
 
 

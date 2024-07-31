@@ -2,7 +2,8 @@ import csv
 import hashlib
 import os
 from importlib import resources
-from typing import List, Tuple, Union
+from importlib.metadata import version
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 import polars as pl
@@ -18,8 +19,15 @@ from capfinder.collate import collate_bam_pod5
 from capfinder.inference_data_loader import make_batched_dataset
 from capfinder.logger_config import configure_logger, configure_prefect_logging
 from capfinder.ml_libs import keras, tf
+from capfinder.report import generate_report
 from capfinder.train_etl import concatenate_dataframes, load_csv, make_x_y_read_id_sets
-from capfinder.utils import get_dtype, log_header, log_step, map_cap_int_to_name
+from capfinder.utils import (
+    get_dtype,
+    log_header,
+    log_output,
+    log_step,
+    map_cap_int_to_name,
+)
 
 # Define custom types
 TrainData = Tuple[
@@ -137,7 +145,7 @@ def custom_cache_key_fn(context: TaskRunContext, parameters: dict) -> str:
 @task(cache_key_fn=custom_cache_key_fn)
 def batched_inference(
     dataset: tf.data.Dataset, model: keras.Model, output_dir: str
-) -> None:
+) -> str:
     """
     Perform inference on the dataset in batches and save predictions to a CSV file.
 
@@ -145,6 +153,9 @@ def batched_inference(
         dataset (tf.data.Dataset): Tensorflow batched dataset.
         model (keras.Model): Pre-trained model for inference.
         output_dir (str): Directory where predictions will be saved.
+
+    Returns:
+        str: Path to the CSV file containing the predictions.
     """
     total_batches = dataset.reduce(0, lambda x, _: x + 1).numpy()
     y_pred: List[int] = []
@@ -165,7 +176,8 @@ def batched_inference(
                 )
             pbar.set_description(f"Processing batch {batch_num}/{total_batches}")
             pbar.set_postfix({"Last batch shape": x.shape})
-    return None
+    logger.info("Batched inference completed!")
+    return output_csv_path
 
 
 @task(cache_key_fn=task_input_hash)
@@ -179,7 +191,7 @@ def collate_bam_pod5_wrapper(
     train_or_test: str,
     plot_signal: bool,
     output_dir: str,
-) -> None:
+) -> tuple[str, str]:
     """
     Wrapper for collating BAM and POD5 files.
 
@@ -194,7 +206,7 @@ def collate_bam_pod5_wrapper(
         plot_signal (bool): Flag to plot the signal.
         output_dir (str): Directory where output files will be saved.
     """
-    collate_bam_pod5(
+    data_path, metadata_path = collate_bam_pod5(
         bam_filepath=bam_filepath,
         pod5_dir=pod5_dir,
         num_processes=num_cpus,
@@ -205,6 +217,7 @@ def collate_bam_pod5_wrapper(
         plot_signal=plot_signal,
         output_dir=output_dir,
     )
+    return data_path, metadata_path
 
 
 def step_info(cur_step: int, tot_steps: int, info: str) -> int:
@@ -240,7 +253,7 @@ def prepare_inference_data(
     batch_size: int = 32,
     debug_code: bool = False,
     refresh_cache: bool = False,
-) -> TrainData:
+) -> tuple[str, str]:
     """
     Prepare inference data by processing BAM and POD5 files, and generate features for the model.
 
@@ -261,13 +274,15 @@ def prepare_inference_data(
         refresh_cache (bool): Flag to refresh cached data.
 
     Returns:
-        TrainData: Tuple containing the training data arrays and series.
+        tuple[str, str]: Paths to the output CSV and HTML files.
     """
     configure_prefect_logging(show_location=debug_code)
     os.makedirs(output_dir, exist_ok=True)
-    tot_steps = 8
+    tot_steps = 9
     log_step(1, tot_steps, "Extracting Cap Signal by collating BAM and POD5 files")
-    collate_bam_pod5_wrapper.with_options(refresh_cache=refresh_cache)(
+    data_path, metadata_path = collate_bam_pod5_wrapper.with_options(
+        refresh_cache=refresh_cache
+    )(
         bam_filepath=bam_filepath,
         pod5_dir=pod5_dir,
         num_cpus=num_cpus,
@@ -276,12 +291,12 @@ def prepare_inference_data(
         cap0_pos=cap0_pos,
         train_or_test=train_or_test,
         plot_signal=plot_signal,
-        output_dir=os.path.join(output_dir, "raw_cap_signal_data"),
+        output_dir=os.path.join(output_dir, "0_raw_cap_signal_data"),
     )
 
     log_step(2, tot_steps, "Discovering CSV files from step 1")
     csv_files = list_csv_files.with_options(refresh_cache=refresh_cache)(
-        os.path.join(output_dir, "raw_cap_signal_data")
+        os.path.join(output_dir, "0_raw_cap_signal_data")
     )
 
     log_step(3, tot_steps, "Reading CSV files")
@@ -295,15 +310,18 @@ def prepare_inference_data(
 
     log_step(5, tot_steps, "Generating features for the model")
     save_to_file.with_options(refresh_cache=refresh_cache)(
-        x, y, read_id, output_dir=os.path.join(output_dir, "processed_cap_signal_data")
+        x,
+        y,
+        read_id,
+        output_dir=os.path.join(output_dir, "1_processed_cap_signal_data"),
     )
 
     log_step(6, tot_steps, "Batching the features")
     dataset = make_batched_dataset(
-        x_path=os.path.join(output_dir, "processed_cap_signal_data", "x.csv"),
-        y_path=os.path.join(output_dir, "processed_cap_signal_data", "y.csv"),
+        x_path=os.path.join(output_dir, "1_processed_cap_signal_data", "x.csv"),
+        y_path=os.path.join(output_dir, "1_processed_cap_signal_data", "y.csv"),
         read_id_path=os.path.join(
-            output_dir, "processed_cap_signal_data", "read_id.csv"
+            output_dir, "1_processed_cap_signal_data", "read_id.csv"
         ),
         batch_size=batch_size,
         num_timesteps=target_length,
@@ -313,11 +331,25 @@ def prepare_inference_data(
     model = get_model("cnn_lstm-classifier.keras")
 
     log_step(8, tot_steps, "Performing batch inference for cap type prediction")
-    batched_inference.with_options(refresh_cache=refresh_cache)(
-        dataset, model, output_dir=os.path.join(output_dir, "cap_predictions")
+    predictions_csv_path = batched_inference.with_options(refresh_cache=refresh_cache)(
+        dataset, model, output_dir=os.path.join(output_dir, "3_cap_predictions")
     )
 
-    return x, y, read_id
+    log_step(9, tot_steps, "Generating report")
+    output_csv_path = os.path.join(
+        output_dir, "3_cap_predictions", "cap_predictions.csv"
+    )
+    output_html_path = os.path.join(
+        output_dir, "3_cap_predictions", "cap_analysis_report.html"
+    )
+    generate_report(
+        metadata_file=metadata_path,
+        predictions_file=predictions_csv_path,
+        output_csv=output_csv_path,
+        output_html=output_html_path,
+    )
+    os.remove(predictions_csv_path)
+    return output_csv_path, output_html_path
 
 
 def predict_cap_types(
@@ -335,6 +367,7 @@ def predict_cap_types(
     batch_size: int = 32,
     debug_code: bool = False,
     refresh_cache: bool = False,
+    formatted_command: Optional[str] = None,
 ) -> None:
     """
     Predict CAP types by preparing the inference data and running the prediction workflow.
@@ -354,10 +387,14 @@ def predict_cap_types(
         batch_size (int): Size of the data batches.
         debug_code (bool): Flag to enable debugging information in logs.
         refresh_cache (bool): Flag to refresh cached data.
+        formatted_command (Optional[str]): The formatted command string to be logged.
     """
-    configure_logger(output_dir, show_location=debug_code)
+    log_filepath = configure_logger(output_dir, show_location=debug_code)
     configure_prefect_logging(show_location=debug_code)
-    prepare_inference_data(
+    version_info = version("capfinder")
+    log_header(f"Using Capfinder v{version_info}")
+    logger.info(formatted_command)
+    output_csv_path, output_html_path = prepare_inference_data(
         bam_filepath,
         pod5_dir,
         num_cpus,
@@ -372,6 +409,11 @@ def predict_cap_types(
         batch_size,
         debug_code,
         refresh_cache,
+    )
+    grey = "\033[90m"
+    reset = "\033[0m"
+    log_output(
+        f"Cap predictions have been saved to the following path:\n {grey}{output_csv_path}{reset}\nThe log file has been saved to:\n {grey}{log_filepath}{reset}\nThe analysis report has been saved to:\n {grey}{output_html_path}{reset}"
     )
     log_header("Processing finished!")
 
@@ -390,7 +432,8 @@ if __name__ == "__main__":
     target_length = 500
     batch_size = 4
     debug_code = False
-    refresh_cache = False  # Add this line to control cache refreshing
+    refresh_cache = False
+    formatted_command = ""
 
     predict_cap_types(
         bam_filepath,
@@ -406,5 +449,6 @@ if __name__ == "__main__":
         target_length,
         batch_size,
         debug_code,
-        refresh_cache,  # Add this parameter to the main function call
+        refresh_cache,
+        formatted_command,
     )

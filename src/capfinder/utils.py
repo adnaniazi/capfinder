@@ -154,3 +154,18 @@ def log_substep(text: str) -> None:
         None
     """
     logger.info(f"  • {text}")
+
+
+def log_output(description: str) -> None:
+    """
+    Log a step in a multi-step process.
+
+    Args:
+        description (str): A description of the current step.
+
+    Returns:
+        None
+    """
+    width = get_terminal_width()
+    text = f"\n{'-' * width}\n{description}"
+    logger.info(text)
