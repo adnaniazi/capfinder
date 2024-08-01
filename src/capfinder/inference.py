@@ -220,21 +220,17 @@ def collate_bam_pod5_wrapper(
     return data_path, metadata_path
 
 
-def step_info(cur_step: int, tot_steps: int, info: str) -> int:
-    """
-    Log the current step information and increment the step count.
-
-    Args:
-        cur_step (int): Current step number.
-        tot_steps (int): Total number of steps.
-        info (str): Information about the current step.
-
-    Returns:
-        int: The incremented step number.
-    """
-    next_step = cur_step + 1
-    logger.info(f"Step {next_step}/{tot_steps}: {info}")
-    return next_step
+@task(cache_key_fn=task_input_hash)
+def generate_report_wrapper(
+    metadata_file: str, predictions_file: str, output_csv: str, output_html: str
+) -> None:
+    generate_report(
+        metadata_file,
+        predictions_file,
+        output_csv,
+        output_html,
+    )
+    os.remove(predictions_file)
 
 
 @flow(name="prepare-inference-data")
@@ -278,7 +274,7 @@ def prepare_inference_data(
     """
     configure_prefect_logging(show_location=debug_code)
     os.makedirs(output_dir, exist_ok=True)
-    tot_steps = 9
+    tot_steps = 10
     log_step(1, tot_steps, "Extracting Cap Signal by collating BAM and POD5 files")
     data_path, metadata_path = collate_bam_pod5_wrapper.with_options(
         refresh_cache=refresh_cache
@@ -300,15 +296,22 @@ def prepare_inference_data(
     )
 
     log_step(3, tot_steps, "Reading CSV files")
-    loaded_dataframes = [load_csv(file_path) for file_path in csv_files]
+    loaded_dataframes = [
+        load_csv.with_options(refresh_cache=refresh_cache)(file_path)
+        for file_path in csv_files
+    ]
 
     log_step(4, tot_steps, "Concatenating CSV files")
-    concatenated_df = concatenate_dataframes(loaded_dataframes)
-    x, y, read_id = make_x_y_read_id_sets(
+    concatenated_df = concatenate_dataframes.with_options(refresh_cache=refresh_cache)(
+        loaded_dataframes
+    )
+
+    log_step(5, tot_steps, "Making features, labels, and read ID sets")
+    x, y, read_id = make_x_y_read_id_sets.with_options(refresh_cache=refresh_cache)(
         concatenated_df, target_length, dtype_n=get_dtype(dtype)
     )
 
-    log_step(5, tot_steps, "Generating features for the model")
+    log_step(6, tot_steps, "Saving features to CSV files")
     save_to_file.with_options(refresh_cache=refresh_cache)(
         x,
         y,
@@ -316,7 +319,7 @@ def prepare_inference_data(
         output_dir=os.path.join(output_dir, "1_processed_cap_signal_data"),
     )
 
-    log_step(6, tot_steps, "Batching the features")
+    log_step(7, tot_steps, "Batching the features")
     dataset = make_batched_dataset(
         x_path=os.path.join(output_dir, "1_processed_cap_signal_data", "x.csv"),
         y_path=os.path.join(output_dir, "1_processed_cap_signal_data", "y.csv"),
@@ -327,28 +330,27 @@ def prepare_inference_data(
         num_timesteps=target_length,
     )
 
-    log_step(7, tot_steps, "Loading the pre-trained model")
+    log_step(8, tot_steps, "Loading the pre-trained model")
     model = get_model("cnn_lstm-classifier.keras")
 
-    log_step(8, tot_steps, "Performing batch inference for cap type prediction")
+    log_step(9, tot_steps, "Performing batch inference for cap type prediction")
     predictions_csv_path = batched_inference.with_options(refresh_cache=refresh_cache)(
         dataset, model, output_dir=os.path.join(output_dir, "3_cap_predictions")
     )
 
-    log_step(9, tot_steps, "Generating report")
+    log_step(10, tot_steps, "Generating report")
     output_csv_path = os.path.join(
         output_dir, "3_cap_predictions", "cap_predictions.csv"
     )
     output_html_path = os.path.join(
         output_dir, "3_cap_predictions", "cap_analysis_report.html"
     )
-    generate_report(
+    generate_report_wrapper.with_options(refresh_cache=refresh_cache)(
         metadata_file=metadata_path,
         predictions_file=predictions_csv_path,
         output_csv=output_csv_path,
         output_html=output_html_path,
     )
-    os.remove(predictions_csv_path)
     return output_csv_path, output_html_path
 
 

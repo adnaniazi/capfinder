@@ -219,7 +219,7 @@ def make_train_test_split(
     return balanced_train_df, balanced_test_df
 
 
-@task(name="zero-pad-and-reshape", cache_key_fn=task_input_hash)
+# We must not make this a task because it is inside another task
 def zero_pad_and_reshape(
     df: pl.DataFrame, column_name: str, target_length: int
 ) -> np.ndarray:
@@ -315,7 +315,6 @@ def make_x_y_read_id_sets(
     -------
         Tuple[np.ndarray, np.ndarray, pl.Series]: A tuple containing the features, labels, and read IDs.
     """
-
     x = zero_pad_and_reshape(dataset, "timeseries", target_length)
     x = x.astype(dtype_n)
     y = (
