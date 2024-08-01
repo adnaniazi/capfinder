@@ -23176,13 +23176,7 @@ dropout rate, and learning rate.</p>
 <span class="normal">394</span>
 <span class="normal">395</span>
 <span class="normal">396</span>
-<span class="normal">397</span>
-<span class="normal">398</span>
-<span class="normal">399</span>
-<span class="normal">400</span>
-<span class="normal">401</span>
-<span class="normal">402</span>
-<span class="normal">403</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">CometArtifactManager</span><span class="p">:</span>
+<span class="normal">397</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">CometArtifactManager</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A class to manage CometML artifacts and experiments.</span>
 
@@ -23241,12 +23235,6 @@ dropout rate, and learning rate.</p>
     <span class="k">def</span> <span class="nf">initialize_comet_ml_experiment</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initialize a CometML experiment.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            project_name (str): The name of the CometML project.</span>
-
-<span class="sd">        Returns:</span>
-<span class="sd">            Optional[comet_ml.Experiment]: The initialized CometML experiment, or None if initialization fails.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
@@ -23474,58 +23462,6 @@ dropout rate, and learning rate.</p>
 
       <p>Initialize a CometML experiment.</p>
 
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td><code>project_name</code></td>
-            <td>
-                  <code>str</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The name of the CometML project.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code>None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Optional[comet_ml.Experiment]: The initialized CometML experiment, or None if initialization fails.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
             <details class="quote">
               <summary>Source code in <code>src/capfinder/train_etl.py</code></summary>
               <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">383</span>
@@ -23542,21 +23478,9 @@ dropout rate, and learning rate.</p>
 <span class="normal">394</span>
 <span class="normal">395</span>
 <span class="normal">396</span>
-<span class="normal">397</span>
-<span class="normal">398</span>
-<span class="normal">399</span>
-<span class="normal">400</span>
-<span class="normal">401</span>
-<span class="normal">402</span>
-<span class="normal">403</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">initialize_comet_ml_experiment</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal">397</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">initialize_comet_ml_experiment</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Initialize a CometML experiment.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        project_name (str): The name of the CometML project.</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        Optional[comet_ml.Experiment]: The initialized CometML experiment, or None if initialization fails.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
@@ -24131,7 +24055,13 @@ dtype_n (Type[np.floating]): The data type to use for the features.
 
             <details class="quote">
               <summary>Source code in <code>src/capfinder/train_etl.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">467</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">461</span>
+<span class="normal">462</span>
+<span class="normal">463</span>
+<span class="normal">464</span>
+<span class="normal">465</span>
+<span class="normal">466</span>
+<span class="normal">467</span>
 <span class="normal">468</span>
 <span class="normal">469</span>
 <span class="normal">470</span>
@@ -24187,13 +24117,7 @@ dtype_n (Type[np.floating]): The data type to use for the features.
 <span class="normal">520</span>
 <span class="normal">521</span>
 <span class="normal">522</span>
-<span class="normal">523</span>
-<span class="normal">524</span>
-<span class="normal">525</span>
-<span class="normal">526</span>
-<span class="normal">527</span>
-<span class="normal">528</span>
-<span class="normal">529</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@task</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;pipeline-task&quot;</span><span class="p">,</span> <span class="n">cache_key_fn</span><span class="o">=</span><span class="n">custom_hash</span><span class="p">)</span>
+<span class="normal">523</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@task</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;pipeline-task&quot;</span><span class="p">,</span> <span class="n">cache_key_fn</span><span class="o">=</span><span class="n">custom_hash</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">pipeline_task</span><span class="p">(</span>
     <span class="n">data_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">save_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">target_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">dtype_n</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TrainData</span><span class="p">:</span>
@@ -24310,7 +24234,13 @@ dtype_n (Type[np.floating]): The data type to use for the features.
 
             <details class="quote">
               <summary>Source code in <code>src/capfinder/train_etl.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">534</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">528</span>
+<span class="normal">529</span>
+<span class="normal">530</span>
+<span class="normal">531</span>
+<span class="normal">532</span>
+<span class="normal">533</span>
+<span class="normal">534</span>
 <span class="normal">535</span>
 <span class="normal">536</span>
 <span class="normal">537</span>
@@ -24369,13 +24299,7 @@ dtype_n (Type[np.floating]): The data type to use for the features.
 <span class="normal">590</span>
 <span class="normal">591</span>
 <span class="normal">592</span>
-<span class="normal">593</span>
-<span class="normal">594</span>
-<span class="normal">595</span>
-<span class="normal">596</span>
-<span class="normal">597</span>
-<span class="normal">598</span>
-<span class="normal">599</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">train_etl</span><span class="p">(</span>
+<span class="normal">593</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">train_etl</span><span class="p">(</span>
     <span class="n">data_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">save_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">target_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -24471,7 +24395,13 @@ save_dir (str): The directory to save the processed data.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/capfinder/train_etl.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">406</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">400</span>
+<span class="normal">401</span>
+<span class="normal">402</span>
+<span class="normal">403</span>
+<span class="normal">404</span>
+<span class="normal">405</span>
+<span class="normal">406</span>
 <span class="normal">407</span>
 <span class="normal">408</span>
 <span class="normal">409</span>
@@ -24519,13 +24449,7 @@ save_dir (str): The directory to save the processed data.</p>
 <span class="normal">451</span>
 <span class="normal">452</span>
 <span class="normal">453</span>
-<span class="normal">454</span>
-<span class="normal">455</span>
-<span class="normal">456</span>
-<span class="normal">457</span>
-<span class="normal">458</span>
-<span class="normal">459</span>
-<span class="normal">460</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@task</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;upload-to-comet-artifacts&quot;</span><span class="p">,</span> <span class="n">cache_key_fn</span><span class="o">=</span><span class="n">task_input_hash</span><span class="p">)</span>
+<span class="normal">454</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@task</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;upload-to-comet-artifacts&quot;</span><span class="p">,</span> <span class="n">cache_key_fn</span><span class="o">=</span><span class="n">task_input_hash</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">upload_to_comet_artifacts</span><span class="p">(</span>
     <span class="n">obj</span><span class="p">:</span> <span class="n">CometArtifactManager</span><span class="p">,</span>
     <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
