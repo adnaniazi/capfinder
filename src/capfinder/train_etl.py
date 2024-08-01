@@ -383,12 +383,6 @@ class CometArtifactManager:
     def initialize_comet_ml_experiment(self) -> None:
         """
         Initialize a CometML experiment.
-
-        Args:
-            project_name (str): The name of the CometML project.
-
-        Returns:
-            Optional[comet_ml.Experiment]: The initialized CometML experiment, or None if initialization fails.
         """
         try:
             logger.info(

@@ -51,15 +51,12 @@ class FASTQRecord:
     """
     Simulates a FASTQ record object.
 
-    Params:
-        id: str
-            Read ID.
-        seq: str
-            Read sequence.
+    Attributes:
+        id (str): Read ID.
+        seq (str): Read sequence.
 
-    Returns:
-        FASTQRecord: FASTQRecord
-            A FASTQRecord object.
+    Example:
+        >>> record = FASTQRecord(id="read1", seq="ATCG")
     """
 
     id: str

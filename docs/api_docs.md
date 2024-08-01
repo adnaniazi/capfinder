@@ -1,3 +1,3 @@
 # API documentation
 
-:::capfinder
+:::src.capfinder
