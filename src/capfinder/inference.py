@@ -297,7 +297,7 @@ def prepare_inference_data(
 
     log_step(3, tot_steps, "Reading CSV files")
     loaded_dataframes = [
-        load_csv.with_options(refresh_cache=refresh_cache)(file_path)
+        load_csv.with_options(refresh_cache=refresh_cache)(file_path, max_records=10)
         for file_path in csv_files
     ]
 

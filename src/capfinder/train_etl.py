@@ -74,17 +74,18 @@ def list_csv_files(folder_path: str) -> list:
 
 
 @task(name="load-csv", cache_key_fn=task_input_hash)
-def load_csv(file_path: str, max_records: int = 1_300_000) -> pl.DataFrame:
-    """Load a CSV file into a single DataFrame with a maximum number of records.
+def load_csv(file_path: str, max_records: Optional[int] = None) -> pl.DataFrame:
+    """
+    Load a CSV file into a single DataFrame with an optional maximum number of records.
 
-    Parameters
+    Parameters:
     ----------
     file_path: str
         Path to the CSV file.
-    max_records: int, optional
-        Maximum number of records to read, defaults to 20.
+    max_records: Optional[int]
+        Maximum number of records to read. If None, read all records.
 
-    Returns
+    Returns:
     -------
     pl.DataFrame
         DataFrame containing the CSV data.
@@ -94,7 +95,11 @@ def load_csv(file_path: str, max_records: int = 1_300_000) -> pl.DataFrame:
     chunk_size = 50000
 
     # Read the first chunk with header
-    first_chunk = pl.read_csv(file_path, n_rows=chunk_size, has_header=True)
+    first_chunk = pl.read_csv(
+        file_path,
+        n_rows=min(chunk_size, max_records) if max_records is not None else chunk_size,
+        has_header=True,
+    )
     result_df = pl.concat([result_df, first_chunk])
     records_read += len(first_chunk)
 
@@ -102,11 +107,18 @@ def load_csv(file_path: str, max_records: int = 1_300_000) -> pl.DataFrame:
     column_names = first_chunk.columns
 
     # Read subsequent chunks with skip_rows
-    while records_read < max_records:
+    while True:
+        if max_records is not None and records_read >= max_records:
+            break
+
+        current_chunk_size = chunk_size
+        if max_records is not None:
+            current_chunk_size = min(chunk_size, max_records - records_read)
+
         try:
             chunk = pl.read_csv(
                 file_path,
-                n_rows=chunk_size,
+                n_rows=current_chunk_size,
                 skip_rows=records_read,
                 has_header=False,
                 new_columns=column_names,
@@ -115,12 +127,12 @@ def load_csv(file_path: str, max_records: int = 1_300_000) -> pl.DataFrame:
                 break
         except Exception:
             break
+
         result_df = pl.concat([result_df, chunk])
         records_read += len(chunk)
         logger.info(f"Records read: {records_read}")
-
     # Limit the result to max_records
-    return result_df.head(max_records)
+    return result_df
 
 
 @task(name="concatenate-dataframes", cache_key_fn=task_input_hash)
@@ -460,7 +472,11 @@ def upload_to_comet_artifacts(
 # https://github.com/PrefectHQ/prefect/issues/7288
 @task(name="pipeline-task", cache_key_fn=custom_hash)
 def pipeline_task(
-    data_dir: str, save_dir: str, target_length: int, dtype_n: Type[np.floating]
+    data_dir: str,
+    save_dir: str,
+    target_length: int,
+    dtype_n: Type[np.floating],
+    max_examples: Optional[int] = None,
 ) -> TrainData:
     """Pipeline task to load and concatenate CSV files.
 
@@ -477,6 +493,9 @@ def pipeline_task(
 
     dtype_n: Type[np.floating]
         The data type to use for the features.
+
+    max_examples: Optional[int]
+        Maximum number of examples to take from the dataset (applies to each class).
 
     Returns
     -------
@@ -495,7 +514,9 @@ def pipeline_task(
     )
     csv_files = list_csv_files(data_dir)
     # loaded_dataframes = [load_csv.submit(file_path) for file_path in csv_files]
-    loaded_dataframes = [load_csv(file_path) for file_path in csv_files]
+    loaded_dataframes = [
+        load_csv(file_path, max_records=max_examples) for file_path in csv_files
+    ]
 
     concatenated_df = concatenate_dataframes(loaded_dataframes)
     train, test = make_train_test_split(concatenated_df, train_frac=0.8, random_seed=42)
@@ -531,6 +552,7 @@ def train_etl(
     target_length: int,
     dtype: DtypeLiteral,
     n_workers: int,
+    max_examples: Optional[int] = None,
 ) -> TrainData:
     """Create a Prefect flow for loading and concatenating CSV files.
 
@@ -550,6 +572,9 @@ def train_etl(
 
     n_workers: int
         Number of workers to use in the Dask cluster.
+
+    max_examples: Optional[int]
+        Maximum number of examples to take from the dataset (applies to each class).
 
     Returns
     -------
@@ -583,14 +608,19 @@ def train_etl(
         save_dir: str,
         target_length: int,
         dtype: DtypeLiteral,
+        max_examples: Optional[int] = None,
     ) -> TrainData:
 
         return pipeline_task(
-            data_dir, save_dir, target_length, dtype_n=get_dtype(dtype)
+            data_dir,
+            save_dir,
+            target_length,
+            dtype_n=get_dtype(dtype),
+            max_examples=max_examples,
         )
 
     # -----------------------------------------
-    return create_datasets(data_dir, save_dir, target_length, dtype)
+    return create_datasets(data_dir, save_dir, target_length, dtype, max_examples)
 
 
 if __name__ == "__main__":
@@ -604,6 +634,9 @@ if __name__ == "__main__":
     target_length = 500
     dtype: DtypeLiteral = "float16"
     n_workers = 1
+    max_examples = (
+        None  # max number of examples to take from the dataset (applies to each class)
+    )
 
     (
         x_train,
@@ -613,7 +646,7 @@ if __name__ == "__main__":
         y_test,
         read_id_test,
         dataset_info,
-    ) = train_etl(data_dir, save_dir, target_length, dtype, n_workers)
+    ) = train_etl(data_dir, save_dir, target_length, dtype, n_workers, max_examples)
     print(x_train.shape, x_test.shape)
     print(x_train.dtype)
     print(dataset_info)

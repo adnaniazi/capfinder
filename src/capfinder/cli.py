@@ -249,6 +249,7 @@ def create_train_config(
             "target_length": 500,
             "dtype": "float16",
             "n_workers": 10,
+            "max_examples": None,
             "n_classes": 4,
             "use_local_dataset": False,
             "remote_dataset_version": "8.0.0",

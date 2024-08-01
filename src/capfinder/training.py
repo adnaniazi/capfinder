@@ -432,6 +432,7 @@ def run_training_pipeline(
             etl_params["target_length"],
             etl_params["dtype"],
             etl_params["n_workers"],
+            etl_params["max_examples"],
         )
     else:  # use remote dataset
         dataset_info = check_and_download_artifact(etl_params)
@@ -798,6 +799,7 @@ if __name__ == "__main__":
         "target_length": 500,  # length of time series
         "dtype": "float16",  # data type of the time series
         "n_workers": 10,  # number of workers for parallel processing (by prefect)
+        "max_examples": None,  # maximum number of examples to use from the dataset (by default None which means all examples)
         "n_classes": 4,  # number of classes in the dataset
         "use_local_dataset": False,  # set to False to use the online dataset, otherwise the local dataset will be used and will be uplaoded to comet
         "remote_dataset_version": "8.0.0",  # version of the online dataset to use

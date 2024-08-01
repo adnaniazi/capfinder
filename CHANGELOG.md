@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Fixed
 - Problems with cli not displaying capfinder version info
 - Fixed issue with API docs generation
+- Added max_examples parameter to ETL to limit the number of examples to process in a dataset (use during training)
 
 ## [0.2.6] - 2024-08-01
 ### Fixed
