@@ -27,15 +27,6 @@ def version_callback(value: bool) -> None:
         raise typer.Exit()
 
 
-@app.callback()
-def main(
-    version: bool = typer.Option(
-        None, "--version", callback=version_callback, is_eager=True
-    ),
-) -> None:
-    pass
-
-
 @app.command()
 def extract_cap_signal(
     bam_filepath: Annotated[
@@ -466,7 +457,12 @@ def predict_cap_types(
 
 
 @app.callback(invoke_without_command=True)
-def callback(ctx: typer.Context) -> None:
+def callback(
+    ctx: typer.Context,
+    version: bool = typer.Option(
+        None, "--version", callback=version_callback, is_eager=True
+    ),
+) -> None:
     global formatted_command_global
 
     if ctx.invoked_subcommand is not None and not any(
