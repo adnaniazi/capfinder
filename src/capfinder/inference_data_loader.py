@@ -2,10 +2,9 @@ from typing import Generator, Tuple
 
 import polars as pl
 from loguru import logger
-from tensorflow import float16, float32, float64
 from typing_extensions import Literal
 
-from capfinder.ml_libs import tf
+from capfinder.ml_libs import float16, float32, float64, tf
 
 DtypeLiteral = Literal["float16", "float32", "float64"]
 

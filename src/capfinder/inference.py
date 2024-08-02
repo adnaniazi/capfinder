@@ -3,6 +3,7 @@ import hashlib
 import os
 from importlib import resources
 from importlib.metadata import version
+from pathlib import Path
 from typing import Optional, Tuple, Union
 
 import numpy as np
@@ -32,6 +33,41 @@ DtypeLiteral = Literal["float16", "float32", "float64"]
 DtypeNumpy = Union[np.float16, np.float32, np.float64]
 
 
+def custom_cache_key_fn(context: TaskRunContext, parameters: dict) -> str:
+    """
+    Generate a custom cache key based on input parameters.
+
+    Args:
+        context (TaskRunContext): Prefect context (unused in this function).
+        parameters (dict): Dictionary of parameters used for cache key generation.
+
+    Returns:
+        str: The generated cache key.
+    """
+    dataset_hash = hashlib.md5(str(parameters["dataset"]).encode()).hexdigest()
+    model_hash = hashlib.md5(str(parameters["model"]).encode()).hexdigest()
+    output_dir_hash = hashlib.md5(parameters["output_dir"].encode()).hexdigest()
+    combined_hash = hashlib.md5(
+        f"{dataset_hash}_{model_hash}_{output_dir_hash}".encode()
+    ).hexdigest()
+    return combined_hash
+
+
+def count_csv_rows(file_path: str) -> int:
+    """
+    Quickly count the number of rows in a CSV file.
+
+    Args:
+        file_path (str): Path to the CSV file.
+
+    Returns:
+        int: Number of rows in the CSV file (excluding the header).
+    """
+    with Path(file_path).open() as f:
+        return sum(1 for _ in f) - 1  # Subtract 1 to exclude the header
+
+
+@task(cache_key_fn=custom_cache_key_fn)
 def reconfigure_logging_task(output_dir: str, debug_code: bool) -> None:
     """
     Reconfigure logging settings for both application and Prefect.
@@ -63,91 +99,72 @@ def get_model(model_name: str, load_optimizer: bool = False) -> keras.Model:
     return model
 
 
-def custom_cache_key_fn(context: TaskRunContext, parameters: dict) -> str:
-    """
-    Generate a custom cache key based on input parameters.
-
-    Args:
-        context (TaskRunContext): Prefect context (unused in this function).
-        parameters (dict): Dictionary of parameters used for cache key generation.
-
-    Returns:
-        str: The generated cache key.
-    """
-    dataset_hash = hashlib.md5(str(parameters["dataset"]).encode()).hexdigest()
-    model_hash = hashlib.md5(str(parameters["model"]).encode()).hexdigest()
-    output_dir_hash = hashlib.md5(parameters["output_dir"].encode()).hexdigest()
-    combined_hash = hashlib.md5(
-        f"{dataset_hash}_{model_hash}_{output_dir_hash}".encode()
-    ).hexdigest()
-    return combined_hash
-
-
-@task(cache_key_fn=custom_cache_key_fn)
+@task(cache_key_fn=task_input_hash)
 def batched_inference(
-    dataset: tf.data.Dataset, model: keras.Model, output_dir: str
+    dataset: tf.data.Dataset,
+    model: keras.Model,
+    output_dir: str,
+    csv_file_path: str,
 ) -> str:
     """
     Perform batched inference on a dataset using a given model and save predictions to a CSV file.
-
-    This function processes a TensorFlow dataset in batches, makes predictions using the provided model,
-    and writes the results to a CSV file. It handles finite datasets and provides a progress bar for
-    monitoring the inference process. The function is designed to work with potentially large datasets
-    by processing them in a streaming fashion without loading the entire dataset into memory.
-
     Args:
-        dataset (tf.data.Dataset): The input dataset containing batches of data to perform inference on.
-            Each batch should contain (features, _, read_id) where features are the input to the model,
-            and read_id is a unique identifier for each sample.
-        model (keras.Model): The Keras model to use for making predictions.
+        dataset (tf.data.Dataset): The input dataset to perform inference on.
+        model (Model): The Keras model to use for making predictions.
         output_dir (str): The directory where the output CSV file will be saved.
-
+        csv_file_path (str): Path to the original CSV file used to create the dataset.
     Returns:
         str: The path to the output CSV file containing the predictions.
-
-    Raises:
-        ValueError: If the input dataset is detected to be infinite.
-
-    Notes:
-        - The function creates the output directory if it doesn't exist.
-        - The output CSV file is named "predictions.csv" and contains two columns: "read_id" and "predicted_cap".
-        - The function uses tqdm to display a progress bar during inference.
-        - For each data point, the read_id and the predicted cap type (mapped from integer to name) are written to the CSV.
-        - This function processes the dataset in a streaming fashion, making it suitable for large datasets
-          that don't fit in memory.
-
-    Example:
-        >>> dataset = create_dataset(file_path, target_length, batch_size, dtype)
-        >>> model = load_model("path/to/model")
-        >>> output_path = batched_inference(dataset, model, "path/to/output/directory")
-        >>> print(f"Predictions saved to: {output_path}")
     """
     os.makedirs(output_dir, exist_ok=True)
     output_csv_path = os.path.join(output_dir, "predictions.csv")
 
-    # Check if the dataset is finite
-    cardinality = tf.data.experimental.cardinality(dataset).numpy()
-    if cardinality == tf.data.experimental.INFINITE_CARDINALITY:
-        logger.error("Dataset is infinite. Please check the dataset creation process.")
-        raise ValueError("Infinite dataset detected")
+    # Count the total number of samples
+    total_reads = count_csv_rows(csv_file_path)
+    logger.info(f"Total reads to perform cap predictions on: {total_reads}")
 
-    # total_batches = cardinality if cardinality != tf.data.experimental.UNKNOWN_CARDINALITY else None
-    total_batches = dataset.reduce(0, lambda x, _: x + 1).numpy()
     with open(output_csv_path, "w", newline="") as csvfile:
         csvwriter = csv.writer(csvfile)
         csvwriter.writerow(["read_id", "predicted_cap"])
 
-        # Use tqdm to wrap the dataset iterator
-        for batch in tqdm(dataset, unit="batch", total=total_batches):
-            x, _, read_id = batch
-            preds = model.predict(x, verbose=0)
-            batch_pred_classes = np.argmax(preds, axis=1)
-            for rid, pred_class in zip(read_id.numpy(), batch_pred_classes):
-                csvwriter.writerow(
-                    [rid.decode("utf-8"), map_cap_int_to_name(pred_class)]
-                )
+        pbar = tqdm(total=total_reads, unit="reads")
 
-    logger.info("Batched inference completed!")
+        processed_reads = 0
+        try:
+            for batch in dataset:
+                x, _, read_id = batch
+                preds = model.predict(x, verbose=0)
+                batch_pred_classes = tf.argmax(preds, axis=1).numpy()
+
+                # Prepare a list of rows to write
+                rows_to_write = [
+                    [rid.decode("utf-8"), map_cap_int_to_name(pred_class)]
+                    for rid, pred_class in zip(read_id.numpy(), batch_pred_classes)
+                ]
+
+                # Write the entire batch at once
+                csvwriter.writerows(rows_to_write)
+
+                batch_size = len(read_id)
+                processed_reads += batch_size
+                pbar.update(batch_size)
+
+                if processed_reads >= total_reads:
+                    break  # Exit the loop if we've processed all expected samples
+        except tf.errors.OutOfRangeError:
+            logger.warning(
+                "Dataset iterator exhausted before processing all expected reads."
+            )
+        finally:
+            pbar.close()
+
+    logger.info(f"Batched inference completed! Processed {processed_reads} reads.")
+    if processed_reads != total_reads:
+        logger.warning(
+            f"Number of processed samples ({processed_reads}) "
+            f"differs from expected total ({total_reads})."
+        )
+
     return output_csv_path
 
 
@@ -281,7 +298,10 @@ def prepare_inference_data(
 
     log_step(4, 5, "Performing batch inference for cap type prediction")
     predictions_csv_path = batched_inference.with_options(refresh_cache=refresh_cache)(
-        dataset, model, output_dir=os.path.join(output_dir, "3_cap_predictions")
+        dataset,
+        model,
+        output_dir=os.path.join(output_dir, "3_cap_predictions"),
+        csv_file_path=data_path,
     )
 
     log_step(5, 5, "Generating report")
@@ -378,7 +398,7 @@ if __name__ == "__main__":
     plot_signal = True
     cap_class = -99
     target_length = 500
-    batch_size = 4
+    batch_size = 10
     debug_code = False
     refresh_cache = True
     formatted_command = ""

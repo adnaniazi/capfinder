@@ -40,3 +40,4 @@ warnings.filterwarnings("ignore", category=UserWarning, message=".*TensorRT.*")
 
 # Now import TensorFlow
 import tensorflow as tf  # noqa
+from tensorflow import float16, float32, float64  # noqa
