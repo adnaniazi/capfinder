@@ -1,130 +1,149 @@
-from typing import Callable
+from typing import Generator, Tuple
 
+import polars as pl
 from loguru import logger
+from tensorflow import float16, float32, float64
+from typing_extensions import Literal
 
 from capfinder.ml_libs import tf
 
+DtypeLiteral = Literal["float16", "float32", "float64"]
 
-def parse_features(line: tf.Tensor, num_timesteps: int) -> tf.Tensor:
-    """Parse features from a CSV line and reshape them.
 
-    Parameters:
-    -----------
-    line : tf.Tensor
-        A tensor representing a single line from the CSV file.
-    num_timesteps : int
-        The number of time steps in each time series.
+def get_dtype(dtype: str) -> tf.DType:
+    """
+    Convert a string dtype to its corresponding TensorFlow data type.
+
+    Args:
+        dtype (str): A string representing the desired data type.
 
     Returns:
-    --------
-    tf.Tensor
-        A tensor of shape (num_timesteps, 1) containing the parsed features.
+        tf.DType: The corresponding TensorFlow data type.
+
+    Raises:
+        ValueError: If an invalid dtype string is provided.
     """
-    column_defaults = [[0.0]] * num_timesteps
-    fields = tf.io.decode_csv(line, record_defaults=column_defaults)
-    features = tf.reshape(fields, (num_timesteps, 1))  # Reshape to (timesteps, 1)
-    return features
+    valid_dtypes = {
+        "float16": float16,
+        "float32": float32,
+        "float64": float64,
+    }
+
+    if dtype in valid_dtypes:
+        return valid_dtypes[dtype]
+    else:
+        logger.warning('You provided an invalid dtype. Using "float32" as default.')
+        return float32
 
 
-def parse_labels(line: tf.Tensor) -> tf.Tensor:
-    """Parse labels from a CSV line.
+def csv_generator(
+    file_path: str, chunk_size: int = 10000
+) -> Generator[Tuple[str, str, str], None, None]:
+    """
+    Generate rows from a CSV file in chunks.
 
-    Parameters:
-    -----------
-    line : tf.Tensor
-        A tensor representing a single line from the CSV file.
+    Args:
+        file_path (str): Path to the CSV file.
+        chunk_size (int, optional): Number of rows to process in each chunk. Defaults to 10000.
+
+    Yields:
+        Tuple[str, str, str]: A tuple containing read_id, cap_class, and timeseries as strings.
+    """
+    df = pl.scan_csv(file_path)
+    total_rows = df.select(pl.count()).collect().item()
+
+    for start in range(0, total_rows, chunk_size):
+        min(start + chunk_size, total_rows)
+        chunk = df.slice(start, chunk_size).collect()
+        for row in chunk.iter_rows():
+            yield (str(row[0]), str(row[1]), str(row[2]))
+
+
+def parse_row(
+    row: Tuple[str, str, str], target_length: int, dtype: tf.DType
+) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+    """
+    Parse a row of data and convert it to the appropriate tensor format.
+
+    Args:
+        row (Tuple[str, str, str]): A tuple containing read_id, cap_class, and timeseries as strings.
+        target_length (int): The desired length of the timeseries tensor.
+        dtype (tf.DType): The desired data type for the timeseries tensor.
 
     Returns:
-    --------
-    tf.Tensor
-        A tensor containing the parsed label.
+        Tuple[tf.Tensor, tf.Tensor, tf.Tensor]: A tuple containing the parsed and formatted tensors for
+        timeseries, cap_class, and read_id.
+
+    Raises:
+        ValueError: If an unsupported dtype is provided.
     """
-    label = tf.io.decode_csv(line, record_defaults=[[0]])
-    return label[0]
+    read_id, cap_class, timeseries = row
+    read_id = tf.strings.strip(read_id)
+    cap_class = tf.strings.to_number(cap_class, out_type=tf.int32)
+
+    timeseries = tf.strings.to_number(
+        tf.strings.split(timeseries, ","), out_type=tf.float32
+    )
+
+    padded = tf.cond(
+        tf.shape(timeseries)[0] >= target_length,
+        lambda: timeseries[:target_length],
+        lambda: tf.pad(
+            timeseries,
+            [[0, target_length - tf.shape(timeseries)[0]]],
+            constant_values=0.0,
+        ),
+    )
+
+    padded = tf.reshape(padded, (target_length, 1))
+
+    if dtype == tf.float16:
+        padded = tf.cast(padded, tf.float16)
+    elif dtype == tf.float32:
+        padded = tf.cast(padded, tf.float32)
+    elif dtype == tf.float64:
+        padded = tf.cast(padded, tf.float64)
+    else:
+        raise ValueError(
+            f"Unsupported dtype: {dtype}. Expected float16, float32, or float64."
+        )
+
+    return padded, cap_class, read_id
 
 
-def parse_read_id(line: tf.Tensor) -> tf.Tensor:
-    """Parse read_id from a CSV line.
-
-    Parameters:
-    -----------
-    line : tf.Tensor
-        A tensor representing a single line from the CSV file.
-
-    Returns:
-    --------
-    tf.Tensor
-        A tensor containing the parsed read_id.
-    """
-    read_id = tf.io.decode_csv(line, record_defaults=[[""]])
-    return read_id[0]
-
-
-def load_dataset(
-    file_path: str, parse_fn: Callable[[tf.Tensor], tf.Tensor], skip_header: bool = True
+def create_dataset(
+    file_path: str, target_length: int, batch_size: int, dtype: DtypeLiteral
 ) -> tf.data.Dataset:
-    """Load dataset from a CSV file.
+    """
+    Create a TensorFlow dataset from a CSV file.
 
-    Parameters:
-    -----------
-    file_path : str
-        The path to the CSV file.
-    parse_fn : Callable[[tf.Tensor], tf.Tensor]
-        The function to use for parsing each line of the CSV.
-        It should take a tf.Tensor (representing a line from the CSV)
-        and return a tf.Tensor (the parsed data).
-    skip_header : bool, optional
-        Whether to skip the header row (default is True).
+    Args:
+        file_path (str): Path to the CSV file.
+        target_length (int): The desired length of the timeseries tensor.
+        batch_size (int): The number of samples per batch.
+        dtype (DtypeLiteral): The desired data type for the timeseries tensor as a string.
 
     Returns:
-    --------
-    tf.data.Dataset
-        A TensorFlow dataset containing the parsed data.
+        tf.data.Dataset: A TensorFlow dataset that yields batches of parsed and formatted data.
     """
-    dataset = tf.data.TextLineDataset(file_path)
-    if skip_header:
-        dataset = dataset.skip(1)  # Skip header row
-    dataset = dataset.map(parse_fn, num_parallel_calls=tf.data.AUTOTUNE)
-    return dataset
+    tf_dtype = get_dtype(dtype)
 
+    dataset = tf.data.Dataset.from_generator(
+        lambda: csv_generator(file_path),
+        output_signature=(
+            tf.TensorSpec(shape=(), dtype=tf.string),
+            tf.TensorSpec(shape=(), dtype=tf.string),
+            tf.TensorSpec(shape=(), dtype=tf.string),
+        ),
+    )
 
-def make_batched_dataset(
-    x_path: str,
-    y_path: str,
-    read_id_path: str,
-    batch_size: int,
-    num_timesteps: int,
-) -> tf.data.Dataset:
-    """Load and combine datasets for inference.
+    dataset = dataset.map(
+        lambda x, y, z: parse_row((x, y, z), target_length, tf_dtype),
+        num_parallel_calls=tf.data.AUTOTUNE,
+    )
 
-    Parameters:
-    -----------
-    x_path : str
-        Path to the CSV file containing features.
-    y_path : str
-        Path to the CSV file containing labels.
-    read_id_path : str
-        Path to the CSV file containing read_ids.
-    batch_size : int
-        The size of each batch.
-    num_timesteps : int
-        The number of time steps in each time series.
+    dataset = dataset.batch(batch_size)
+    dataset = dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
 
-    Returns:
-    --------
-    tf.data.Dataset
-        A combined dataset with features, labels, and read_ids, padded and batched.
-    """
-    features_dataset = load_dataset(x_path, lambda x: parse_features(x, num_timesteps))
-    labels_dataset = load_dataset(y_path, parse_labels)
-    read_id_dataset = load_dataset(read_id_path, parse_read_id)
-
-    # Combine datasets
-    dataset = tf.data.Dataset.zip((features_dataset, labels_dataset, read_id_dataset))
-
-    # Batch and prefetch
-    dataset = dataset.padded_batch(
-        batch_size, padded_shapes=([num_timesteps, 1], [], []), drop_remainder=False
-    ).prefetch(buffer_size=tf.data.AUTOTUNE)
-    logger.info("Batched dataset generated.")
+    logger.info("Dataset created successfully.")
     return dataset

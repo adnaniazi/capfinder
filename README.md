@@ -19,7 +19,19 @@
 
 A package for decoding RNA cap types
 
-## Installation
+# Installing Capfinder
+
+## 1. Installing and activate new Python Environment
+Please make a fresh conda/micromamba env with required supported Python versions like so:
+```sh
+micromamba create -n capfinder_env python=3.12
+```
+Next, activate the newly created conda env:
+```sh
+micromamba activate capfinder_env
+```
+
+## 2. Installing Capfinder package
 
 ### CPU installation
 ```sh
@@ -30,12 +42,31 @@ pip install capfinder[cpu]
 ```sh
 pip install capfinder[gpu] "jax[cuda12]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
 ```
+Capfinder depends on JAX internally for using GPUS. Jax requires CUDA to work. So the CUDA requierments for capfinder are the same as the CUDA requirements for JAX.
+For more information [here](https://jax.readthedocs.io/en/latest/installation.html) on the required CUDA version for JAX.
 
 ### TPU installation
 ```sh
 pip install capfinder[tpu] "jax[tpu]" -f https://storage.googleapis.com/jax-releases/libtpu_releases.html
 ```
 
+# 3. Updating Capfinder
+
+If you are using an older version of Capfinder, and would like to upgrade to the latest version, then please do the following in your activate Python enviorment:
+### Updating Capfinder on CPU-based system
+```sh
+pip install capfinder[cpu]
+```
+
+### Updating Capfinder on GPU-based system
+```sh
+pip install capfinder[gpu]
+```
+
+### Updating Capfinder on TPU-based system
+```sh
+pip install capfinder[tpu]
+```
 
 
 ## Development

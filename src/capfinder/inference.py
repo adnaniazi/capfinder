@@ -3,7 +3,7 @@ import hashlib
 import os
 from importlib import resources
 from importlib.metadata import version
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Tuple, Union
 
 import numpy as np
 import polars as pl
@@ -16,18 +16,11 @@ from typing_extensions import Literal
 
 from capfinder import model as model_module
 from capfinder.collate import collate_bam_pod5
-from capfinder.inference_data_loader import make_batched_dataset
+from capfinder.inference_data_loader import create_dataset
 from capfinder.logger_config import configure_logger, configure_prefect_logging
 from capfinder.ml_libs import keras, tf
 from capfinder.report import generate_report
-from capfinder.train_etl import concatenate_dataframes, load_csv, make_x_y_read_id_sets
-from capfinder.utils import (
-    get_dtype,
-    log_header,
-    log_output,
-    log_step,
-    map_cap_int_to_name,
-)
+from capfinder.utils import log_header, log_output, log_step, map_cap_int_to_name
 
 # Define custom types
 TrainData = Tuple[
@@ -70,58 +63,6 @@ def get_model(model_name: str, load_optimizer: bool = False) -> keras.Model:
     return model
 
 
-@task(cache_key_fn=task_input_hash)
-def list_csv_files(directory: str) -> List[str]:
-    """
-    List CSV files in the specified directory that match the pattern.
-
-    Args:
-        directory (str): Directory to search for CSV files.
-
-    Returns:
-        List[str]: List of paths to CSV files.
-    """
-    try:
-        all_files = os.listdir(directory)
-        csv_files = [
-            os.path.join(directory, file)
-            for file in all_files
-            if file.startswith("data__cap") and file.endswith(".csv")
-        ]
-        return csv_files
-    except Exception as e:
-        logger.error(f"An error occurred while listing files: {e}")
-        return []
-
-
-@task(cache_key_fn=task_input_hash)
-def save_to_file(
-    x: np.ndarray, y: np.ndarray, read_id: pl.Series, output_dir: str
-) -> None:
-    """
-    Save arrays and series to CSV files in the specified directory.
-
-    Args:
-        x (np.ndarray): Array of features.
-        y (np.ndarray): Array of labels.
-        read_id (pl.Series): Series of read IDs.
-        output_dir (str): Directory where files will be saved.
-    """
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir, exist_ok=True)
-
-    dfp_x = pl.from_numpy(data=x.reshape(x.shape[:2]), orient="row")
-    dfp_y = pl.from_numpy(data=y.reshape(y.shape[:2]), orient="row")
-    dfp_id = pl.DataFrame(read_id)
-
-    x_path = os.path.join(output_dir, "x.csv")
-    dfp_x.write_csv(file=x_path)
-    y_path = os.path.join(output_dir, "y.csv")
-    dfp_y.write_csv(file=y_path)
-    id_path = os.path.join(output_dir, "read_id.csv")
-    dfp_id.write_csv(file=id_path)
-
-
 def custom_cache_key_fn(context: TaskRunContext, parameters: dict) -> str:
     """
     Generate a custom cache key based on input parameters.
@@ -147,35 +88,65 @@ def batched_inference(
     dataset: tf.data.Dataset, model: keras.Model, output_dir: str
 ) -> str:
     """
-    Perform inference on the dataset in batches and save predictions to a CSV file.
+    Perform batched inference on a dataset using a given model and save predictions to a CSV file.
+
+    This function processes a TensorFlow dataset in batches, makes predictions using the provided model,
+    and writes the results to a CSV file. It handles finite datasets and provides a progress bar for
+    monitoring the inference process. The function is designed to work with potentially large datasets
+    by processing them in a streaming fashion without loading the entire dataset into memory.
 
     Args:
-        dataset (tf.data.Dataset): Tensorflow batched dataset.
-        model (keras.Model): Pre-trained model for inference.
-        output_dir (str): Directory where predictions will be saved.
+        dataset (tf.data.Dataset): The input dataset containing batches of data to perform inference on.
+            Each batch should contain (features, _, read_id) where features are the input to the model,
+            and read_id is a unique identifier for each sample.
+        model (keras.Model): The Keras model to use for making predictions.
+        output_dir (str): The directory where the output CSV file will be saved.
 
     Returns:
-        str: Path to the CSV file containing the predictions.
+        str: The path to the output CSV file containing the predictions.
+
+    Raises:
+        ValueError: If the input dataset is detected to be infinite.
+
+    Notes:
+        - The function creates the output directory if it doesn't exist.
+        - The output CSV file is named "predictions.csv" and contains two columns: "read_id" and "predicted_cap".
+        - The function uses tqdm to display a progress bar during inference.
+        - For each data point, the read_id and the predicted cap type (mapped from integer to name) are written to the CSV.
+        - This function processes the dataset in a streaming fashion, making it suitable for large datasets
+          that don't fit in memory.
+
+    Example:
+        >>> dataset = create_dataset(file_path, target_length, batch_size, dtype)
+        >>> model = load_model("path/to/model")
+        >>> output_path = batched_inference(dataset, model, "path/to/output/directory")
+        >>> print(f"Predictions saved to: {output_path}")
     """
-    total_batches = dataset.reduce(0, lambda x, _: x + 1).numpy()
-    y_pred: List[int] = []
     os.makedirs(output_dir, exist_ok=True)
     output_csv_path = os.path.join(output_dir, "predictions.csv")
 
+    # Check if the dataset is finite
+    cardinality = tf.data.experimental.cardinality(dataset).numpy()
+    if cardinality == tf.data.experimental.INFINITE_CARDINALITY:
+        logger.error("Dataset is infinite. Please check the dataset creation process.")
+        raise ValueError("Infinite dataset detected")
+
+    # total_batches = cardinality if cardinality != tf.data.experimental.UNKNOWN_CARDINALITY else None
+    total_batches = dataset.reduce(0, lambda x, _: x + 1).numpy()
     with open(output_csv_path, "w", newline="") as csvfile:
         csvwriter = csv.writer(csvfile)
         csvwriter.writerow(["read_id", "predicted_cap"])
-        pbar = tqdm(dataset, total=total_batches, desc="Processing batches...")
-        for batch_num, (x, _, read_id) in enumerate(pbar, start=1):
+
+        # Use tqdm to wrap the dataset iterator
+        for batch in tqdm(dataset, unit="batch", total=total_batches):
+            x, _, read_id = batch
             preds = model.predict(x, verbose=0)
             batch_pred_classes = np.argmax(preds, axis=1)
-            y_pred.extend(batch_pred_classes)
             for rid, pred_class in zip(read_id.numpy(), batch_pred_classes):
                 csvwriter.writerow(
                     [rid.decode("utf-8"), map_cap_int_to_name(pred_class)]
                 )
-            pbar.set_description(f"Processing batch {batch_num}/{total_batches}")
-            pbar.set_postfix({"Last batch shape": x.shape})
+
     logger.info("Batched inference completed!")
     return output_csv_path
 
@@ -205,6 +176,9 @@ def collate_bam_pod5_wrapper(
         train_or_test (str): Indicates whether data is for training or testing.
         plot_signal (bool): Flag to plot the signal.
         output_dir (str): Directory where output files will be saved.
+
+    Returns:
+        tuple[str, str]: Paths to the data and metadata files.
     """
     data_path, metadata_path = collate_bam_pod5(
         bam_filepath=bam_filepath,
@@ -224,6 +198,15 @@ def collate_bam_pod5_wrapper(
 def generate_report_wrapper(
     metadata_file: str, predictions_file: str, output_csv: str, output_html: str
 ) -> None:
+    """
+    Wrapper for generating the report.
+
+    Args:
+        metadata_file (str): Path to the metadata file.
+        predictions_file (str): Path to the predictions file.
+        output_csv (str): Path to save the output CSV.
+        output_html (str): Path to save the output HTML.
+    """
     generate_report(
         metadata_file,
         predictions_file,
@@ -274,8 +257,8 @@ def prepare_inference_data(
     """
     configure_prefect_logging(show_location=debug_code)
     os.makedirs(output_dir, exist_ok=True)
-    tot_steps = 10
-    log_step(1, tot_steps, "Extracting Cap Signal by collating BAM and POD5 files")
+
+    log_step(1, 5, "Extracting Cap Signal by collating BAM and POD5 files")
     data_path, metadata_path = collate_bam_pod5_wrapper.with_options(
         refresh_cache=refresh_cache
     )(
@@ -290,55 +273,18 @@ def prepare_inference_data(
         output_dir=os.path.join(output_dir, "0_raw_cap_signal_data"),
     )
 
-    log_step(2, tot_steps, "Discovering CSV files from step 1")
-    csv_files = list_csv_files.with_options(refresh_cache=refresh_cache)(
-        os.path.join(output_dir, "0_raw_cap_signal_data")
-    )
+    log_step(2, 5, "Creating TensorFlow dataset")
+    dataset = create_dataset(data_path, target_length, batch_size, dtype)
 
-    log_step(3, tot_steps, "Reading CSV files")
-    loaded_dataframes = [
-        load_csv.with_options(refresh_cache=refresh_cache)(file_path, max_records=10)
-        for file_path in csv_files
-    ]
-
-    log_step(4, tot_steps, "Concatenating CSV files")
-    concatenated_df = concatenate_dataframes.with_options(refresh_cache=refresh_cache)(
-        loaded_dataframes
-    )
-
-    log_step(5, tot_steps, "Making features, labels, and read ID sets")
-    x, y, read_id = make_x_y_read_id_sets.with_options(refresh_cache=refresh_cache)(
-        concatenated_df, target_length, dtype_n=get_dtype(dtype)
-    )
-
-    log_step(6, tot_steps, "Saving features to CSV files")
-    save_to_file.with_options(refresh_cache=refresh_cache)(
-        x,
-        y,
-        read_id,
-        output_dir=os.path.join(output_dir, "1_processed_cap_signal_data"),
-    )
-
-    log_step(7, tot_steps, "Batching the features")
-    dataset = make_batched_dataset(
-        x_path=os.path.join(output_dir, "1_processed_cap_signal_data", "x.csv"),
-        y_path=os.path.join(output_dir, "1_processed_cap_signal_data", "y.csv"),
-        read_id_path=os.path.join(
-            output_dir, "1_processed_cap_signal_data", "read_id.csv"
-        ),
-        batch_size=batch_size,
-        num_timesteps=target_length,
-    )
-
-    log_step(8, tot_steps, "Loading the pre-trained model")
+    log_step(3, 5, "Loading the pre-trained model")
     model = get_model("cnn_lstm-classifier.keras")
 
-    log_step(9, tot_steps, "Performing batch inference for cap type prediction")
+    log_step(4, 5, "Performing batch inference for cap type prediction")
     predictions_csv_path = batched_inference.with_options(refresh_cache=refresh_cache)(
         dataset, model, output_dir=os.path.join(output_dir, "3_cap_predictions")
     )
 
-    log_step(10, tot_steps, "Generating report")
+    log_step(5, 5, "Generating report")
     output_csv_path = os.path.join(
         output_dir, "3_cap_predictions", "cap_predictions.csv"
     )
@@ -424,7 +370,7 @@ if __name__ == "__main__":
     bam_filepath = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/8_20231114_randomCAP1v3_rna004/1_basecall_subset/sorted.calls.bam"
     pod5_dir = "/export/valenfs/data/raw_data/minion/2024_cap_ligation_data_v3_oligo/20240521_cap1/20231114_randomCAP1v3_rna004/"
     num_cpus = 3
-    output_dir = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/8_20231114_randomCAP1v3_rna004/test_OTE_vizs_july12"
+    output_dir = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/8_20231114_randomCAP1v3_rna004/test_OTE_vizs_july50"
     dtype: DtypeLiteral = "float16"
     reference = "GCTTTCGTTCGTCTCCGGACTTATCGCACCACCTATCCATCATCAGTACTGT"
     cap0_pos = 52
@@ -434,7 +380,7 @@ if __name__ == "__main__":
     target_length = 500
     batch_size = 4
     debug_code = False
-    refresh_cache = False
+    refresh_cache = True
     formatted_command = ""
 
     predict_cap_types(
