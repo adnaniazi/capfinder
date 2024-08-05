@@ -16,7 +16,7 @@
     
     
       
-        <title>Installing - capfinder</title>
+        <title>Prediction - capfinder</title>
       
     
     
@@ -70,7 +70,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#for-cpu-only-support" class="md-skip">
+        <a href="#usage" class="md-skip">
           Skip to content
         </a>
       
@@ -106,7 +106,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Installing
+              Prediction
             
           </span>
         </div>
@@ -318,194 +318,9 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../installation.md#installing-the-package" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Installing the package
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    
-    
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
-        
-          
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
-            
-  
-  <span class="md-ellipsis">
-    Usage
-  </span>
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
-            <span class="md-nav__icon md-icon"></span>
-            Usage
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../data_preprocessing.md#data-preprocessing" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Data preparation
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../cap_prediction.md#cap-prediction" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Cap prediction
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../updating/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Updating the package
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../development/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Development
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../api_docs/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    API Documentation
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../changelog/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Change Log
-  </span>
-  
-
-      </a>
     </li>
   
 
@@ -535,27 +350,54 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#for-cpu-only-support" class="md-nav__link">
+  <a href="#usage" class="md-nav__link">
     <span class="md-ellipsis">
-      For CPU-only support
+      Usage
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#for-gpu-support-cuda-12" class="md-nav__link">
+  <a href="#description" class="md-nav__link">
     <span class="md-ellipsis">
-      For GPU support (CUDA 12)
+      Description
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#for-tpu-support" class="md-nav__link">
+  <a href="#required-options" class="md-nav__link">
     <span class="md-ellipsis">
-      For TPU support
+      Required Options
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#additional-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Additional Options
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example Command
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-tips" class="md-nav__link">
+    <span class="md-ellipsis">
+      Performance Tips
     </span>
   </a>
   
@@ -579,20 +421,110 @@
   
 
 
-  <h1>Installing</h1>
+  <h1>Prediction</h1>
 
-<p>Capfinder can be installed with support for different hardware configurations. Choose the appropriate installation command based on your hardware setup. This ensures you get the right dependencies for optimal performance on your system:</p>
-<h4 id="for-cpu-only-support">For CPU-only support</h4>
-<pre><code class="language-sh">pip install capfinder[cpu]
+<p>Capfinder provides a command-line interface to predict RNA cap types using BAM and POD5 files. Here's how to use the <code>predict-cap-types</code> function:</p>
+<h4 id="usage">Usage</h4>
+<pre><code class="language-bash">capfinder predict-cap-types [OPTIONS]
 </code></pre>
-<h4 id="for-gpu-support-cuda-12">For GPU support (CUDA 12)</h4>
-<pre><code class="language-sh">pip install capfinder[gpu] &quot;jax[cuda12]&quot; -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+<h4 id="description">Description</h4>
+<p>This command predicts RNA cap types using BAM and POD5 files.</p>
+<h4 id="required-options">Required Options</h4>
+<ul>
+<li><code>--bam_filepath</code> or <code>-b</code>: Path to the BAM file</li>
+<li><code>--pod5_dir</code> or <code>-p</code>: Path to directory containing POD5 files</li>
+<li><code>--output_dir</code> or <code>-o</code>: Path to the output directory for prediction results and logs</li>
+</ul>
+<h4 id="additional-options">Additional Options</h4>
+<ul>
+<li><code>--n_cpus</code> or <code>-n</code>: Number of CPUs to use for parallel processing. Default is 1</li>
+<li>Multiple CPUs are used during processing for POD5 file and BAM data (Step 1/5)</li>
+<li>Increasing this number speeds up POD5 and BAM processing</li>
+<li>For inference (Step 4/5), only a single CPU is used no matter how many CPUs you have specified</li>
+<li>
+<p>For faster inference, have a GPU available (it will be detected automatically) and set dtype to 'float16'</p>
+</li>
+<li>
+<p><code>--dtype</code> or <code>-d</code>: Data type for model input. Valid values are 'float16', 'float32', or 'float64'. Default is 'float16'</p>
+</li>
+<li>Without a GPU, use 'float32' or 'float64' for better performance</li>
+<li>
+<p>With a GPU, use 'float16' for faster inference</p>
+</li>
+<li>
+<p><code>--batch_size</code> or <code>-bs</code>: Batch size for model inference. Default is 128</p>
+</li>
+<li>Larger batch sizes can speed up inference but require more memory. </li>
+<li>
+<p>If the code crashes during step 4/5, you have probably set too high a batch size.</p>
+</li>
+<li>
+<p><code>--plot-signal</code> / <code>--no-plot-signal</code>: Whether to plot extracted cap signal or not. Default is --no-plot-signal</p>
+</li>
+<li>
+<p>Saving plots is can help you plot the read's signal, and plot the signal for cap and flanking bases(&#177;5).</p>
+</li>
+<li>
+<p><code>--debug</code> / <code>--no-debug</code>: Enable debug mode for more detailed logging. Default is --no-debug</p>
+</li>
+<li>
+<p><code>--refresh-cache</code> / <code>--no-refresh-cache</code>: Refresh the cache for intermediate results. Default is --no-refresh-cache</p>
+</li>
+<li>
+<p><code>--help</code>: Show the help message and exit</p>
+</li>
+</ul>
+<h4 id="example-command">Example Command</h4>
+<pre><code class="language-sh">capfinder predict-cap-types \
+    --bam_filepath /path/to/sorted.bam \
+    --pod5_dir /path/to/pod5_dir \
+    --output_dir /path/to/output_dir \
+    --n_cpus 10 \
+    --dtype float16 \
+    --batch_size 256 \
+    --no_plot_signal \
+    --no-debug \
+    --no-refresh-cache
 </code></pre>
-<p>Capfinder depends on JAX internally for using GPUS. Jax requires CUDA to work. So the CUDA requierments for capfinder are the same as the CUDA requirements for JAX.
-For more information <a href="https://jax.readthedocs.io/en/latest/installation.html">here</a> on the required CUDA version for JAX.</p>
-<h4 id="for-tpu-support">For TPU support</h4>
-<pre><code class="language-sh">pip install capfinder[tpu] &quot;jax[tpu]&quot; -f https://storage.googleapis.com/jax-releases/libtpu_releases.html
-</code></pre>
+<h4 id="performance-tips">Performance Tips</h4>
+<ol>
+<li><strong>CPU Usage</strong>: </li>
+<li>Increase <code>--n_cpus</code> for faster processing of POD5 and BAM data</li>
+<li>
+<p>CPU count doesn't affect inference speed (Step 4/5)</p>
+</li>
+<li>
+<p><strong>GPU Acceleration</strong>:</p>
+</li>
+<li>If you have a GPU, use <code>--dtype float16</code> for faster inference</li>
+<li>
+<p>Without a GPU, <code>float32</code> or <code>float64</code> may perform better</p>
+</li>
+<li>
+<p><strong>Batch Size</strong>:</p>
+</li>
+<li>Larger batch sizes can speed up inference but require more memory</li>
+<li>
+<p>Adjust <code>--batch_size</code> based on your system's capabilities</p>
+</li>
+<li>
+<p><strong>Plotting</strong>:</p>
+</li>
+<li>
+<p>Use <code>--no-plot-signal</code> to skip signal plotting for faster processing</p>
+</li>
+<li>
+<p><strong>Debugging</strong>:</p>
+</li>
+<li>
+<p>Enable <code>--debug</code> for detailed logging when troubleshooting</p>
+</li>
+<li>
+<p><strong>Caching</strong>:</p>
+</li>
+<li>Use <code>--refresh-cache</code> if you've made changes to input data and need to regenerate intermediate results</li>
+</ol>
+<p>For more detailed information, run <code>capfinder predict-cap-types --help</code>.</p>
 
 
 
