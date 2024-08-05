@@ -679,11 +679,21 @@
 <h4 id="important-note">Important Note</h4>
 <p>Dorado Live Basecalling does not generate the necessary moves information. Therefore, post-data acquisition standalone basecalling and alignment process is required to produce the moves information in the alignment SAM/BAM file.</p>
 <h4 id="basecalling-process">Basecalling Process</h4>
-<p>To generate the required data, we use a custom script that performs the following steps:
- 1. Basecalls the raw POD5 files using Dorado
- 2. Emits SAM format output with moves information
- 3. Aligns the basecalled reads to a reference genome
- 4. Converts the output to a sorted and indexed BAM file</p>
+<p>To generate the required data, we use a custom script that performs the following steps:</p>
+<ol>
+<li>
+<p>Basecalls the raw POD5 files using Dorado</p>
+</li>
+<li>
+<p>Emits SAM format output with moves information</p>
+</li>
+<li>
+<p>Aligns the basecalled reads to a reference genome</p>
+</li>
+<li>
+<p>Converts the output to a sorted and indexed BAM file</p>
+</li>
+</ol>
 <h4 id="basecalling-script">Basecalling Script</h4>
 <p>Below is a script that automates this process. You'll need to adjust the paths and settings to match your environment:</p>
 <pre><code class="language-bash">#!/bin/bash
