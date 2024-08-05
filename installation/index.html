@@ -652,16 +652,16 @@
 
 <p>Capfinder can be installed with support for different hardware configurations. Choose the appropriate installation command based on your hardware setup. This ensures you get the right dependencies for optimal performance on your system:</p>
 <h4 id="for-cpu-only-support">For CPU-only support</h4>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>capfinder<span class="o">[</span>cpu<span class="o">]</span>
-</code></pre></div>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>capfinder<span class="o">[</span>cpu<span class="o">]</span>
+</span></code></pre></div>
 <h4 id="for-gpu-support-cuda-12">For GPU support (CUDA 12)</h4>
-<p><div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span>capfinder<span class="o">[</span>gpu<span class="o">]</span><span class="w"> </span><span class="s2">&quot;jax[cuda12]&quot;</span><span class="w"> </span>-f<span class="w"> </span>https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
-</code></pre></div>
+<p><div class="language-sh highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span>capfinder<span class="o">[</span>gpu<span class="o">]</span><span class="w"> </span><span class="s2">&quot;jax[cuda12]&quot;</span><span class="w"> </span>-f<span class="w"> </span>https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+</span></code></pre></div>
 Capfinder depends on JAX internally for using GPUS. Jax requires CUDA to work. So the CUDA requierments for capfinder are the same as the CUDA requirements for JAX.
 For more information <a href="https://jax.readthedocs.io/en/latest/installation.html">here</a> on the required CUDA version for JAX.</p>
 <h4 id="for-tpu-support">For TPU support</h4>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span>capfinder<span class="o">[</span>tpu<span class="o">]</span><span class="w"> </span><span class="s2">&quot;jax[tpu]&quot;</span><span class="w"> </span>-f<span class="w"> </span>https://storage.googleapis.com/jax-releases/libtpu_releases.html
-</code></pre></div>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span>capfinder<span class="o">[</span>tpu<span class="o">]</span><span class="w"> </span><span class="s2">&quot;jax[tpu]&quot;</span><span class="w"> </span>-f<span class="w"> </span>https://storage.googleapis.com/jax-releases/libtpu_releases.html
+</span></code></pre></div>
 
 
 
