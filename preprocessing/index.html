@@ -677,19 +677,19 @@
 <li>A transcriptome reference</li>
 </ul>
 <h4 id="important-note">Important Note</h4>
-<p>As of the current version, Live Basecalling does not generate the necessary moves information. Therefore, a standalone basecalling and alignment process is required to produce the moves table alongside the alignments.</p>
+<p>Dorado Live Basecalling does not generate the necessary moves information. Therefore, post-data acquisition standalone basecalling and alignment process is required to produce the moves information in the alignment SAM/BAM file.</p>
 <h4 id="basecalling-process">Basecalling Process</h4>
 <p>To generate the required data, we use a custom script that performs the following steps:
-1. Basecalls the raw POD5 files using Dorado
-2. Emits SAM format output with moves information
-3. Aligns the basecalled reads to a reference genome
-4. Converts the output to a sorted and indexed BAM file</p>
+ 1. Basecalls the raw POD5 files using Dorado
+ 2. Emits SAM format output with moves information
+ 3. Aligns the basecalled reads to a reference genome
+ 4. Converts the output to a sorted and indexed BAM file</p>
 <h4 id="basecalling-script">Basecalling Script</h4>
 <p>Below is a script that automates this process. You'll need to adjust the paths and settings to match your environment:</p>
-<pre><code class="language-sh">#!/bin/bash
+<pre><code class="language-bash">#!/bin/bash
 # Please edit to reflect your settings
 DORADO=&quot;/path/to/bin/dorado&quot;
-SAMTOOLS=&quot;~/path/to/samtools&quot;
+SAMTOOLS=&quot;/path/to/samtools&quot;
 POD5_DIR=&quot;/path/to/pod5_dir&quot;
 REF=&quot;/path/to/ref.fa&quot;
 MODEL_NAME=&quot;rna004_130bps_sup@v5.0.0&quot;
