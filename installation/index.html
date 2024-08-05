@@ -561,14 +561,16 @@
 <div class="tabbed-block"></div>
 </div>
 </div>
-<p>sh     pip install capfinder[cpu]   <br />
-This installation is suitable for systems without GPU or TPU hardware.</p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>capfinder<span class="o">[</span>cpu<span class="o">]</span>
+</span></code></pre></div>
+<p>This installation is suitable for systems without GPU or TPU hardware.</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="2:1"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">GPU (CUDA 12)</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block"></div>
 </div>
 </div>
-<p>sh     pip install capfinder[gpu] "jax[cuda12]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html     </p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span>capfinder<span class="o">[</span>gpu<span class="o">]</span><span class="w"> </span><span class="s2">&quot;jax[cuda12]&quot;</span><span class="w"> </span>-f<span class="w"> </span>https://storage.googleapis.com/jax-releases/jax_cuda_releases.html<span class="w">   </span>
+</span></code></pre></div>
 <p>Use this installation for systems with NVIDIA GPUs supporting CUDA 12.
 CopyCapfinder depends on JAX internally for using GPUs. JAX requires CUDA to work. The CUDA requirements for Capfinder are the same as the CUDA requirements for JAX.</p>
 <p>For more information on the required CUDA version for JAX, refer to the <a href="https://jax.readthedocs.io/en/latest/installation.html">JAX installation guide</a>.</p>
@@ -577,8 +579,9 @@ CopyCapfinder depends on JAX internally for using GPUs. JAX requires CUDA to wor
 <div class="tabbed-block"></div>
 </div>
 </div>
-<p>sh     pip install capfinder[tpu] "jax[tpu]" -f https://storage.googleapis.com/jax-releases/libtpu_releases.html   <br />
-This installation is for systems with TPU (Tensor Processing Unit) hardware.</p>
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span>capfinder<span class="o">[</span>tpu<span class="o">]</span><span class="w"> </span><span class="s2">&quot;jax[tpu]&quot;</span><span class="w"> </span>-f<span class="w"> </span>https://storage.googleapis.com/jax-releases/libtpu_releases.html<span class="w"> </span>
+</span></code></pre></div>
+<p>This installation is for systems with TPU (Tensor Processing Unit) hardware.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 </div>
