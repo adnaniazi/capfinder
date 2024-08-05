@@ -9,23 +9,25 @@
       
       
       
+        <link rel="prev" href="../updating/">
       
-        <link rel="next" href="updating/">
+      
+        <link rel="next" href="../api_docs/">
       
       
-      <link rel="icon" href="assets/images/favicon.png">
+      <link rel="icon" href="../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.28">
     
     
       
-        <title>capfinder</title>
+        <title>Development - capfinder</title>
       
     
     
-      <link rel="stylesheet" href="assets/stylesheets/main.6543a935.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.6543a935.min.css">
       
         
-        <link rel="stylesheet" href="assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -44,9 +46,9 @@
       
     
     
-      <link rel="stylesheet" href="assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -72,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#capfinder-a-tool-for-mrna-cap-type-prediction" class="md-skip">
+        <a href="#creating-dev-enviornment" class="md-skip">
           Skip to content
         </a>
       
@@ -88,7 +90,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="." title="capfinder" class="md-header__button md-logo" aria-label="capfinder" data-md-component="logo">
+    <a href=".." title="capfinder" class="md-header__button md-logo" aria-label="capfinder" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -108,7 +110,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Introduction
+              Development
             
           </span>
         </div>
@@ -221,7 +223,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="." title="capfinder" class="md-nav__button md-logo" aria-label="capfinder" data-md-component="logo">
+    <a href=".." title="capfinder" class="md-nav__button md-logo" aria-label="capfinder" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -248,30 +250,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Introduction
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="." class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -280,44 +262,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#supported-cap-types" class="md-nav__link">
-    <span class="md-ellipsis">
-      Supported Cap Types
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#requirements-for-mrna-data" class="md-nav__link">
-    <span class="md-ellipsis">
-      Requirements for mRNA data
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -364,7 +308,7 @@
   
   
     <li class="md-nav__item">
-      <a href="environment.md#making-a-virtual-environment" class="md-nav__link">
+      <a href="../environment.md#making-a-virtual-environment" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -385,7 +329,7 @@
   
   
     <li class="md-nav__item">
-      <a href="installation.md#installing-the-package" class="md-nav__link">
+      <a href="../installation.md#installing-the-package" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -448,7 +392,7 @@
   
   
     <li class="md-nav__item">
-      <a href="data_preprocessing.md#data-preprocessing" class="md-nav__link">
+      <a href="../data_preprocessing.md#data-preprocessing" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -469,7 +413,7 @@
   
   
     <li class="md-nav__item">
-      <a href="cap_prediction.md#cap-prediction" class="md-nav__link">
+      <a href="../cap_prediction.md#cap-prediction" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -497,7 +441,7 @@
   
   
     <li class="md-nav__item">
-      <a href="updating/" class="md-nav__link">
+      <a href="../updating/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -514,10 +458,28 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="development/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Development
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -526,6 +488,96 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#creating-dev-enviornment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Creating dev enviornment
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cpu-installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      CPU installation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#gpu-installation-cuda-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      GPU installation (CUDA 12)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tpu-installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      TPU installation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Testing
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Documentation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#releasing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Releasing
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pre-commit" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pre-commit
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -537,7 +589,7 @@
   
   
     <li class="md-nav__item">
-      <a href="api_docs/" class="md-nav__link">
+      <a href="../api_docs/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -557,7 +609,7 @@
   
   
     <li class="md-nav__item">
-      <a href="changelog/" class="md-nav__link">
+      <a href="../changelog/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -587,8 +639,6 @@
   
   
   
-    
-  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -597,18 +647,72 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#supported-cap-types" class="md-nav__link">
+  <a href="#creating-dev-enviornment" class="md-nav__link">
     <span class="md-ellipsis">
-      Supported Cap Types
+      Creating dev enviornment
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#requirements-for-mrna-data" class="md-nav__link">
+  <a href="#cpu-installation" class="md-nav__link">
     <span class="md-ellipsis">
-      Requirements for mRNA data
+      CPU installation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#gpu-installation-cuda-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      GPU installation (CUDA 12)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tpu-installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      TPU installation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Testing
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Documentation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#releasing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Releasing
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pre-commit" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pre-commit
     </span>
   </a>
   
@@ -632,59 +736,61 @@
   
 
 
-<h1 id="capfinder-a-tool-for-mrna-cap-type-prediction">Capfinder - A Tool for mRNA Cap type Prediction</h1>
-<p><a href="https://pypi.python.org/pypi/capfinder/"><img alt="PyPI" src="https://img.shields.io/pypi/v/capfinder?style=flat-square" /></a>
-<a href="https://pypistats.org/packages/capfinder"><img alt="PyPi Downloads" src="https://img.shields.io/pypi/dm/capfinder" /></a>
-<a href="https://github.com/adnaniazi/capfinder/actions/workflows/release.yml"><img alt="CI/CD" src="https://github.com/adnaniazi/capfinder/actions/workflows/release.yml/badge.svg" /></a>
-<a href="https://pypi.python.org/pypi/capfinder/"><img alt="PyPI - Python Version" src="https://img.shields.io/pypi/pyversions/capfinder?style=flat-square" /></a>
-<a href="https://pypi.python.org/pypi/capfinder/"><img alt="PyPI - License" src="https://img.shields.io/pypi/l/capfinder?style=flat-square" /></a></p>
-<hr />
-<p><strong>Documentation</strong>: <a href="https://adnaniazi.github.io/capfinder">https://adnaniazi.github.io/capfinder</a></p>
-<p><strong>Source Code</strong>: <a href="https://github.com/adnaniazi/capfinder">https://github.com/adnaniazi/capfinder</a></p>
-<p><strong>PyPI</strong>: <a href="https://pypi.org/project/capfinder/">https://pypi.org/project/capfinder/</a></p>
-<hr />
-<p>Capfinder is a tool for predicting RNA cap types in mRNAs sequenced using Oxford Nanopore Technologies (ONT) RNA004 chemistry. It analyzes native RNA sequencing data to determine the cap structure of individual transcripts.</p>
-<h3 id="supported-cap-types">Supported Cap Types</h3>
-<p>Currently, Capfinder can predict the following cap types:</p>
+  <h1>Development</h1>
+
 <ul>
-<li>Cap0</li>
-<li>Cap1</li>
-<li>Cap2</li>
-<li>Cap2,-1</li>
+<li>Clone this repository</li>
+<li>Requirements:</li>
+<li><a href="https://python-poetry.org/">Poetry</a></li>
+<li>Python 3.10 - 3.12</li>
+<li>Create a virtual environment and install the dependencies</li>
 </ul>
-<h3 id="requirements-for-mrna-data">Requirements for mRNA data</h3>
-<p>For Capfinder to work correctly, the  m7G moiety in mRNA samples must be first be removed from the 5' end of the mRNA (decapping).
-The following 52-nucleotide oligonucleotide extension (OTE) must be ligated to the 5' end of each mRNA molecule:</p>
-<pre><code class="language-sh">5'-GCTTTCGTTCGTCTCCGGACTTATCGCACCACCTATCCATCATCAGTACTGT-3'
+<h3 id="creating-dev-enviornment">Creating dev enviornment</h3>
+<pre><code class="language-sh">micromamba create -n capfinder_env python=3.12
+micromamba activate capfinder_env
 </code></pre>
-<hr />
-<h1 id="installing-capfinder">Installing Capfinder</h1>
-<h3 id="1-make-and-activate-a-new-python-environment">1. Make and activate a new Python Environment</h3>
+<h3 id="cpu-installation">CPU installation</h3>
+<pre><code class="language-sh">poetry install --extras cpu
+</code></pre>
+<h3 id="gpu-installation-cuda-12">GPU installation (CUDA 12)</h3>
+<pre><code class="language-sh">poetry install --extras gpu
+poetry run pip install &quot;jax[cuda12]&quot; -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+</code></pre>
+<h3 id="tpu-installation">TPU installation</h3>
+<pre><code class="language-sh">poetry install --extras tpu
+poetry run pip install &quot;jax[tpu]&quot; -f https://storage.googleapis.com/jax-releases/libtpu_releases.html
+</code></pre>
 <ul>
-<li><a href="docs/environment.md">Creating new environment</a></li>
+<li>Activate the virtual environment</li>
 </ul>
-<h3 id="2-install-capfinder-package">2. Install Capfinder package</h3>
-<ul>
-<li><a href="docs/installing.md">Installation</a></li>
-</ul>
-<hr />
-<h1 id="usage">Usage</h1>
-<h3 id="1-preprocessing-basecalling-and-alignment">1. Preprocessing: Basecalling and alignment</h3>
-<ul>
-<li><a href="docs/data-preprocessing.md">Data Preprocessing</a></li>
-</ul>
-<h3 id="2-predicting-cap-types-with-capfinder">2. Predicting Cap Types with Capfinder</h3>
-<ul>
-<li><a href="docs/cap-prediction.md">Usage Guide</a></li>
-</ul>
-<h1 id="updating-capfinder">Updating Capfinder</h1>
-<ul>
-<li><a href="docs/updating.md">Updating Capfinder</a></li>
-</ul>
-<h2 id="development">Development</h2>
-<ul>
-<li><a href="docs/development.md">Development</a></li>
-</ul>
+<pre><code class="language-sh">poetry shell
+</code></pre>
+<h3 id="testing">Testing</h3>
+<pre><code class="language-sh">pytest
+</code></pre>
+<h3 id="documentation">Documentation</h3>
+<p>The documentation is automatically generated from the content of the <a href="./docs">docs directory</a> and from the docstrings
+ of the public signatures of the source code. The documentation is updated and published as a <a href="https://pages.github.com/">Github project page
+ </a> automatically as part each release.</p>
+<h3 id="releasing">Releasing</h3>
+<p>Trigger the <a href="https://github.com/adnaniazi/capfinder/actions/workflows/draft_release.yml">Draft release workflow</a>
+(press <em>Run workflow</em>). This will update the changelog &amp; version and create a GitHub release which is in <em>Draft</em> state.</p>
+<p>Find the draft release from the
+<a href="https://github.com/adnaniazi/capfinder/releases">GitHub releases</a> and publish it. When
+ a release is published, it'll trigger <a href="https://github.com/adnaniazi/capfinder/blob/master/.github/workflows/release.yml">release</a> workflow which creates PyPI
+ release and deploys updated documentation.</p>
+<h3 id="pre-commit">Pre-commit</h3>
+<p>Pre-commit hooks run all the auto-formatters (e.g. <code>black</code>, <code>isort</code>), linters (e.g. <code>mypy</code>, <code>flake8</code>), and other quality
+ checks to make sure the changeset is in good shape before a commit/push happens.</p>
+<p>You can install the hooks with (runs for each commit):</p>
+<pre><code class="language-sh">pre-commit install
+</code></pre>
+<p>Or if you want them to run only for each push:</p>
+<pre><code class="language-sh">pre-commit install -t pre-push
+</code></pre>
+<p>Or if you want e.g. want to run all checks manually for all files:</p>
+<pre><code class="language-sh">pre-commit run --all-files
+</code></pre>
 
 
 
@@ -731,10 +837,10 @@ The following 52-nucleotide oligonucleotide extension (OTE) must be ligated to t
     </div>
     
     
-    <script id="__config" type="application/json">{"base": ".", "features": [], "search": "assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="assets/javascripts/bundle.fe8b6f2b.min.js"></script>
+      <script src="../assets/javascripts/bundle.fe8b6f2b.min.js"></script>
       
     
   </body>

@@ -10,22 +10,20 @@
       
       
       
-        <link rel="next" href="updating/">
       
-      
-      <link rel="icon" href="assets/images/favicon.png">
+      <link rel="icon" href="../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.28">
     
     
       
-        <title>capfinder</title>
+        <title>Data preprocessing - capfinder</title>
       
     
     
-      <link rel="stylesheet" href="assets/stylesheets/main.6543a935.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.6543a935.min.css">
       
         
-        <link rel="stylesheet" href="assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -44,9 +42,9 @@
       
     
     
-      <link rel="stylesheet" href="assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -72,7 +70,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#capfinder-a-tool-for-mrna-cap-type-prediction" class="md-skip">
+        <a href="#requirements" class="md-skip">
           Skip to content
         </a>
       
@@ -88,7 +86,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="." title="capfinder" class="md-header__button md-logo" aria-label="capfinder" data-md-component="logo">
+    <a href=".." title="capfinder" class="md-header__button md-logo" aria-label="capfinder" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -108,7 +106,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Introduction
+              Data preprocessing
             
           </span>
         </div>
@@ -221,7 +219,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="." title="capfinder" class="md-nav__button md-logo" aria-label="capfinder" data-md-component="logo">
+    <a href=".." title="capfinder" class="md-nav__button md-logo" aria-label="capfinder" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -248,30 +246,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Introduction
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="." class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -280,44 +258,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#supported-cap-types" class="md-nav__link">
-    <span class="md-ellipsis">
-      Supported Cap Types
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#requirements-for-mrna-data" class="md-nav__link">
-    <span class="md-ellipsis">
-      Requirements for mRNA data
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -364,7 +304,7 @@
   
   
     <li class="md-nav__item">
-      <a href="environment.md#making-a-virtual-environment" class="md-nav__link">
+      <a href="../environment.md#making-a-virtual-environment" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -385,7 +325,7 @@
   
   
     <li class="md-nav__item">
-      <a href="installation.md#installing-the-package" class="md-nav__link">
+      <a href="../installation.md#installing-the-package" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -448,7 +388,7 @@
   
   
     <li class="md-nav__item">
-      <a href="data_preprocessing.md#data-preprocessing" class="md-nav__link">
+      <a href="../data_preprocessing.md#data-preprocessing" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -469,7 +409,7 @@
   
   
     <li class="md-nav__item">
-      <a href="cap_prediction.md#cap-prediction" class="md-nav__link">
+      <a href="../cap_prediction.md#cap-prediction" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -497,7 +437,7 @@
   
   
     <li class="md-nav__item">
-      <a href="updating/" class="md-nav__link">
+      <a href="../updating/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -517,7 +457,7 @@
   
   
     <li class="md-nav__item">
-      <a href="development/" class="md-nav__link">
+      <a href="../development/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -537,7 +477,7 @@
   
   
     <li class="md-nav__item">
-      <a href="api_docs/" class="md-nav__link">
+      <a href="../api_docs/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -557,7 +497,7 @@
   
   
     <li class="md-nav__item">
-      <a href="changelog/" class="md-nav__link">
+      <a href="../changelog/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -587,8 +527,6 @@
   
   
   
-    
-  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -597,18 +535,36 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#supported-cap-types" class="md-nav__link">
+  <a href="#requirements" class="md-nav__link">
     <span class="md-ellipsis">
-      Supported Cap Types
+      Requirements
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#requirements-for-mrna-data" class="md-nav__link">
+  <a href="#important-note" class="md-nav__link">
     <span class="md-ellipsis">
-      Requirements for mRNA data
+      Important Note
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#basecalling-process" class="md-nav__link">
+    <span class="md-ellipsis">
+      Basecalling Process
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#basecalling-script" class="md-nav__link">
+    <span class="md-ellipsis">
+      Basecalling Script
     </span>
   </a>
   
@@ -632,59 +588,85 @@
   
 
 
-<h1 id="capfinder-a-tool-for-mrna-cap-type-prediction">Capfinder - A Tool for mRNA Cap type Prediction</h1>
-<p><a href="https://pypi.python.org/pypi/capfinder/"><img alt="PyPI" src="https://img.shields.io/pypi/v/capfinder?style=flat-square" /></a>
-<a href="https://pypistats.org/packages/capfinder"><img alt="PyPi Downloads" src="https://img.shields.io/pypi/dm/capfinder" /></a>
-<a href="https://github.com/adnaniazi/capfinder/actions/workflows/release.yml"><img alt="CI/CD" src="https://github.com/adnaniazi/capfinder/actions/workflows/release.yml/badge.svg" /></a>
-<a href="https://pypi.python.org/pypi/capfinder/"><img alt="PyPI - Python Version" src="https://img.shields.io/pypi/pyversions/capfinder?style=flat-square" /></a>
-<a href="https://pypi.python.org/pypi/capfinder/"><img alt="PyPI - License" src="https://img.shields.io/pypi/l/capfinder?style=flat-square" /></a></p>
-<hr />
-<p><strong>Documentation</strong>: <a href="https://adnaniazi.github.io/capfinder">https://adnaniazi.github.io/capfinder</a></p>
-<p><strong>Source Code</strong>: <a href="https://github.com/adnaniazi/capfinder">https://github.com/adnaniazi/capfinder</a></p>
-<p><strong>PyPI</strong>: <a href="https://pypi.org/project/capfinder/">https://pypi.org/project/capfinder/</a></p>
-<hr />
-<p>Capfinder is a tool for predicting RNA cap types in mRNAs sequenced using Oxford Nanopore Technologies (ONT) RNA004 chemistry. It analyzes native RNA sequencing data to determine the cap structure of individual transcripts.</p>
-<h3 id="supported-cap-types">Supported Cap Types</h3>
-<p>Currently, Capfinder can predict the following cap types:</p>
+  <h1>Data preprocessing</h1>
+
+<p>Capfinder requires detailed information about base movements during sequencing, which is captured in the "moves table". This information is crucial for accurate cap type prediction.</p>
+<h4 id="requirements">Requirements</h4>
 <ul>
-<li>Cap0</li>
-<li>Cap1</li>
-<li>Cap2</li>
-<li>Cap2,-1</li>
+<li>Raw POD5 files from your sequencing run</li>
+<li>Dorado basecaller (version 0.7.0 or later recommended)</li>
+<li>Samtools (version 1.18 or later recommended)</li>
+<li>A transcriptome reference</li>
 </ul>
-<h3 id="requirements-for-mrna-data">Requirements for mRNA data</h3>
-<p>For Capfinder to work correctly, the  m7G moiety in mRNA samples must be first be removed from the 5' end of the mRNA (decapping).
-The following 52-nucleotide oligonucleotide extension (OTE) must be ligated to the 5' end of each mRNA molecule:</p>
-<pre><code class="language-sh">5'-GCTTTCGTTCGTCTCCGGACTTATCGCACCACCTATCCATCATCAGTACTGT-3'
+<h4 id="important-note">Important Note</h4>
+<p>As of the current version, Live Basecalling does not generate the necessary moves information. Therefore, a standalone basecalling and alignment process is required to produce the moves table alongside the alignments.</p>
+<h4 id="basecalling-process">Basecalling Process</h4>
+<p>To generate the required data, we use a custom script that performs the following steps:
+1. Basecalls the raw POD5 files using Dorado
+2. Emits SAM format output with moves information
+3. Aligns the basecalled reads to a reference genome
+4. Converts the output to a sorted and indexed BAM file</p>
+<h4 id="basecalling-script">Basecalling Script</h4>
+<p>Below is a script that automates this process. You'll need to adjust the paths and settings to match your environment:</p>
+<pre><code class="language-sh">#!/bin/bash
+# Please edit to reflect your settings
+DORADO=&quot;/path/to/bin/dorado&quot;
+SAMTOOLS=&quot;~/path/to/samtools&quot;
+POD5_DIR=&quot;/path/to/pod5_dir&quot;
+REF=&quot;/path/to/ref.fa&quot;
+MODEL_NAME=&quot;rna004_130bps_sup@v5.0.0&quot;
+MODEL_DIR=&quot;/path/to/download/doardo/model&quot;
+OUTPUT_DIR=&quot;/path/to/save/basecalled/data&quot;
+DEVICE=&quot;cuda:all&quot;
+
+#---------------------- DO NOT EDIT BELOW THIS LINE ---------------------#
+
+# Function to check and download the model if necessary
+check_and_download_model() {
+    local model_path=&quot;$MODEL_DIR/$MODEL_NAME&quot;
+    if [ ! -d &quot;$model_path&quot; ]; then
+        echo &quot;Model not found. Downloading...&quot;
+        &quot;$DORADO&quot; download --directory &quot;$MODEL_DIR&quot; --model &quot;$MODEL_NAME&quot;
+    else
+        echo &quot;Model already exists. Skipping download.&quot;
+    fi
+}
+
+# Create output directory
+mkdir -p &quot;$OUTPUT_DIR&quot;
+
+# Check and download the model if necessary
+check_and_download_model
+
+# Run dorado basecaller and pipe directly to samtools for sorting and indexing
+echo &quot;Starting basecalling and BAM creation...&quot;
+&quot;$DORADO&quot; basecaller &quot;$MODEL_DIR/$MODEL_NAME&quot; &quot;$POD5_DIR/&quot; \
+    --recursive \
+    --emit-sam \
+    --emit-moves \
+    --device &quot;$DEVICE&quot; \
+    --reference &quot;$REF&quot; | \
+&quot;$SAMTOOLS&quot; view -bS - | \
+&quot;$SAMTOOLS&quot; sort -o &quot;$OUTPUT_DIR/sorted.calls.bam&quot; -
+
+# Index the sorted BAM file
+echo &quot;Indexing the sorted BAM file...&quot;
+&quot;$SAMTOOLS&quot; index &quot;$OUTPUT_DIR/sorted.calls.bam&quot;
+
+echo &quot;Basecalling and processing completed. Output files are in $OUTPUT_DIR&quot;
+echo &quot;Generated files: sorted.calls.bam and sorted.calls.bam.bai&quot;
 </code></pre>
-<hr />
-<h1 id="installing-capfinder">Installing Capfinder</h1>
-<h3 id="1-make-and-activate-a-new-python-environment">1. Make and activate a new Python Environment</h3>
-<ul>
-<li><a href="docs/environment.md">Creating new environment</a></li>
-</ul>
-<h3 id="2-install-capfinder-package">2. Install Capfinder package</h3>
-<ul>
-<li><a href="docs/installing.md">Installation</a></li>
-</ul>
-<hr />
-<h1 id="usage">Usage</h1>
-<h3 id="1-preprocessing-basecalling-and-alignment">1. Preprocessing: Basecalling and alignment</h3>
-<ul>
-<li><a href="docs/data-preprocessing.md">Data Preprocessing</a></li>
-</ul>
-<h3 id="2-predicting-cap-types-with-capfinder">2. Predicting Cap Types with Capfinder</h3>
-<ul>
-<li><a href="docs/cap-prediction.md">Usage Guide</a></li>
-</ul>
-<h1 id="updating-capfinder">Updating Capfinder</h1>
-<ul>
-<li><a href="docs/updating.md">Updating Capfinder</a></li>
-</ul>
-<h2 id="development">Development</h2>
-<ul>
-<li><a href="docs/development.md">Development</a></li>
-</ul>
+<p>To use this script:</p>
+<ol>
+<li>Save it to a file (e.g., <code>basecall.sh</code>).</li>
+<li>Make it executable:
+   <code>bash
+   chmod +x basecall.sh</code></li>
+<li>Edit the script directly to change any paths or settings as needed.</li>
+<li>Run the script:
+   <code>bash
+   ./basecall.sh</code></li>
+</ol>
 
 
 
@@ -731,10 +713,10 @@ The following 52-nucleotide oligonucleotide extension (OTE) must be ligated to t
     </div>
     
     
-    <script id="__config" type="application/json">{"base": ".", "features": [], "search": "assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="assets/javascripts/bundle.fe8b6f2b.min.js"></script>
+      <script src="../assets/javascripts/bundle.fe8b6f2b.min.js"></script>
       
     
   </body>
