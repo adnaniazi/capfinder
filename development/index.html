@@ -512,27 +512,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#cpu-installation" class="md-nav__link">
+  <a href="#installation" class="md-nav__link">
     <span class="md-ellipsis">
-      CPU installation
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#gpu-installation-cuda-12" class="md-nav__link">
-    <span class="md-ellipsis">
-      GPU installation (CUDA 12)
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#tpu-installation" class="md-nav__link">
-    <span class="md-ellipsis">
-      TPU installation
+      Installation
     </span>
   </a>
   
@@ -656,27 +638,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#cpu-installation" class="md-nav__link">
+  <a href="#installation" class="md-nav__link">
     <span class="md-ellipsis">
-      CPU installation
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#gpu-installation-cuda-12" class="md-nav__link">
-    <span class="md-ellipsis">
-      GPU installation (CUDA 12)
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#tpu-installation" class="md-nav__link">
-    <span class="md-ellipsis">
-      TPU installation
+      Installation
     </span>
   </a>
   
@@ -749,24 +713,20 @@
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>micromamba<span class="w"> </span>create<span class="w"> </span>-n<span class="w"> </span>capfinder_env<span class="w"> </span><span class="nv">python</span><span class="o">=</span><span class="m">3</span>.12
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>micromamba<span class="w"> </span>activate<span class="w"> </span>capfinder_env
 </span></code></pre></div>
-<h3 id="cpu-installation">CPU installation</h3>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>poetry<span class="w"> </span>install<span class="w"> </span>--extras<span class="w"> </span>cpu
-</span></code></pre></div>
-<h3 id="gpu-installation-cuda-12">GPU installation (CUDA 12)</h3>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>poetry<span class="w"> </span>install<span class="w"> </span>--extras<span class="w"> </span>gpu
+<h3 id="installation">Installation</h3>
+<p>=== CPU 
+    <div class="language-sh highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>poetry<span class="w"> </span>install<span class="w"> </span>--extras<span class="w"> </span>cpu
+</span></code></pre></div></p>
+<p>=== GPU (CUDA 12)
+    <div class="language-sh highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>poetry<span class="w"> </span>install<span class="w"> </span>--extras<span class="w"> </span>gpu
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>poetry<span class="w"> </span>run<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;jax[cuda12]&quot;</span><span class="w"> </span>-f<span class="w"> </span>https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
-</span></code></pre></div>
-<h3 id="tpu-installation">TPU installation</h3>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>poetry<span class="w"> </span>install<span class="w"> </span>--extras<span class="w"> </span>tpu
+</span></code></pre></div></p>
+<p>=== TPU
+    <div class="language-sh highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>poetry<span class="w"> </span>install<span class="w"> </span>--extras<span class="w"> </span>tpu
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>poetry<span class="w"> </span>run<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;jax[tpu]&quot;</span><span class="w"> </span>-f<span class="w"> </span>https://storage.googleapis.com/jax-releases/libtpu_releases.html
-</span></code></pre></div>
-<ul>
-<li>Activate the virtual environment</li>
-</ul>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>poetry<span class="w"> </span>shell
-</span></code></pre></div>
+</span></code></pre></div></p>
 <h3 id="testing">Testing</h3>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>pytest
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>pytest
 </span></code></pre></div>
 <h3 id="documentation">Documentation</h3>
 <p>The documentation is automatically generated from the content of the <a href="./docs">docs directory</a> and from the docstrings
@@ -783,13 +743,13 @@
 <p>Pre-commit hooks run all the auto-formatters (e.g. <code>black</code>, <code>isort</code>), linters (e.g. <code>mypy</code>, <code>flake8</code>), and other quality
  checks to make sure the changeset is in good shape before a commit/push happens.</p>
 <p>You can install the hooks with (runs for each commit):</p>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>pre-commit<span class="w"> </span>install
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>pre-commit<span class="w"> </span>install
 </span></code></pre></div>
 <p>Or if you want them to run only for each push:</p>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>pre-commit<span class="w"> </span>install<span class="w"> </span>-t<span class="w"> </span>pre-push
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>pre-commit<span class="w"> </span>install<span class="w"> </span>-t<span class="w"> </span>pre-push
 </span></code></pre></div>
 <p>Or if you want e.g. want to run all checks manually for all files:</p>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>pre-commit<span class="w"> </span>run<span class="w"> </span>--all-files
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>pre-commit<span class="w"> </span>run<span class="w"> </span>--all-files
 </span></code></pre></div>
 
 

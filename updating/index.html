@@ -74,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#for-cpu-only-support" class="md-skip">
+        <a href="#upgrading-capfinder" class="md-skip">
           Skip to content
         </a>
       
@@ -447,17 +447,8 @@
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
       
       
+        
       
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Updating the package
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
       
       <a href="./" class="md-nav__link md-nav__link--active">
         
@@ -468,50 +459,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#for-cpu-only-support" class="md-nav__link">
-    <span class="md-ellipsis">
-      For CPU-only support
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#for-gpu-support" class="md-nav__link">
-    <span class="md-ellipsis">
-      For GPU support
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#for-tpu-support" class="md-nav__link">
-    <span class="md-ellipsis">
-      For TPU support
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
       
     </li>
   
@@ -594,41 +541,8 @@
   
   
   
+    
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#for-cpu-only-support" class="md-nav__link">
-    <span class="md-ellipsis">
-      For CPU-only support
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#for-gpu-support" class="md-nav__link">
-    <span class="md-ellipsis">
-      For GPU support
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#for-tpu-support" class="md-nav__link">
-    <span class="md-ellipsis">
-      For TPU support
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
   
 </nav>
                   </div>
@@ -646,18 +560,28 @@
   
 
 
-  <h1>Updating the package</h1>
-
-<p>If you are using an older version of Capfinder, and would like to upgrade to the latest version, then please do the following in your activate Python enviorment:</p>
-<h3 id="for-cpu-only-support">For CPU-only support</h3>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>capfinder<span class="o">[</span>cpu<span class="o">]</span>
+<h1 id="upgrading-capfinder">Upgrading Capfinder</h1>
+<p>If you are using an older version of Capfinder and would like to upgrade to the latest version, please use the appropriate command in your activated Python environment based on your hardware support:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="cpu-only-support" name="__tabbed_1" type="radio" /><input id="gpu-support" name="__tabbed_1" type="radio" /><input id="tpu-support" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="cpu-only-support">CPU-only support</label><label for="gpu-support">GPU support</label><label for="tpu-support">TPU support</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>capfinder<span class="o">[</span>cpu<span class="o">]</span>
 </span></code></pre></div>
-<h3 id="for-gpu-support">For GPU support</h3>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span>capfinder<span class="o">[</span>gpu<span class="o">]</span>
+</div>
+<div class="tabbed-block">
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>capfinder<span class="o">[</span>gpu<span class="o">]</span>
 </span></code></pre></div>
-<h3 id="for-tpu-support">For TPU support</h3>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span>capfinder<span class="o">[</span>tpu<span class="o">]</span>
+</div>
+<div class="tabbed-block">
+<div class="language-sh highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>capfinder<span class="o">[</span>tpu<span class="o">]</span>
 </span></code></pre></div>
+</div>
+</div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Make sure you are in the correct Python environment before running these commands.</p>
+</div>
 
 
 
