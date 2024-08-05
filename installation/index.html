@@ -73,11 +73,6 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
-        
-        <a href="#for-cpu-only-support" class="md-skip">
-          Skip to content
-        </a>
-      
     </div>
     <div data-md-component="announce">
       
@@ -338,17 +333,6 @@
       
       
       
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Installing the package
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -358,50 +342,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#for-cpu-only-support" class="md-nav__link">
-    <span class="md-ellipsis">
-      For CPU-only support
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#for-gpu-support-cuda-12" class="md-nav__link">
-    <span class="md-ellipsis">
-      For GPU support (CUDA 12)
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#for-tpu-support" class="md-nav__link">
-    <span class="md-ellipsis">
-      For TPU support
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
       
     </li>
   
@@ -597,41 +537,6 @@
   
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#for-cpu-only-support" class="md-nav__link">
-    <span class="md-ellipsis">
-      For CPU-only support
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#for-gpu-support-cuda-12" class="md-nav__link">
-    <span class="md-ellipsis">
-      For GPU support (CUDA 12)
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#for-tpu-support" class="md-nav__link">
-    <span class="md-ellipsis">
-      For TPU support
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -650,18 +555,34 @@
 
   <h1>Installing the package</h1>
 
-<p>Capfinder can be installed with support for different hardware configurations. Choose the appropriate installation command based on your hardware setup. This ensures you get the right dependencies for optimal performance on your system:</p>
-<h4 id="for-cpu-only-support">For CPU-only support</h4>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>capfinder<span class="o">[</span>cpu<span class="o">]</span>
-</span></code></pre></div>
-<h4 id="for-gpu-support-cuda-12">For GPU support (CUDA 12)</h4>
-<p><div class="language-sh highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span>capfinder<span class="o">[</span>gpu<span class="o">]</span><span class="w"> </span><span class="s2">&quot;jax[cuda12]&quot;</span><span class="w"> </span>-f<span class="w"> </span>https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
-</span></code></pre></div>
-Capfinder depends on JAX internally for using GPUS. Jax requires CUDA to work. So the CUDA requierments for capfinder are the same as the CUDA requirements for JAX.
-For more information <a href="https://jax.readthedocs.io/en/latest/installation.html">here</a> on the required CUDA version for JAX.</p>
-<h4 id="for-tpu-support">For TPU support</h4>
-<div class="language-sh highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span>capfinder<span class="o">[</span>tpu<span class="o">]</span><span class="w"> </span><span class="s2">&quot;jax[tpu]&quot;</span><span class="w"> </span>-f<span class="w"> </span>https://storage.googleapis.com/jax-releases/libtpu_releases.html
-</span></code></pre></div>
+<p>Capfinder can be installed with support for different hardware configurations. Choose the appropriate installation tab based on your hardware setup. This ensures you get the right dependencies for optimal performance on your system:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:1"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">CPU-only</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block"></div>
+</div>
+</div>
+<p>sh     pip install capfinder[cpu]   <br />
+This installation is suitable for systems without GPU or TPU hardware.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:1"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">GPU (CUDA 12)</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block"></div>
+</div>
+</div>
+<p>sh     pip install capfinder[gpu] "jax[cuda12]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html     </p>
+<p>Use this installation for systems with NVIDIA GPUs supporting CUDA 12.
+CopyCapfinder depends on JAX internally for using GPUs. JAX requires CUDA to work. The CUDA requirements for Capfinder are the same as the CUDA requirements for JAX.</p>
+<p>For more information on the required CUDA version for JAX, refer to the <a href="https://jax.readthedocs.io/en/latest/installation.html">JAX installation guide</a>.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="3:1"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">TPU</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block"></div>
+</div>
+</div>
+<p>sh     pip install capfinder[tpu] "jax[tpu]" -f https://storage.googleapis.com/jax-releases/libtpu_releases.html   <br />
+This installation is for systems with TPU (Tensor Processing Unit) hardware.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+</div>
+<p>Make sure to choose the installation command that matches your hardware configuration for optimal performance.</p>
 
 
 
