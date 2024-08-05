@@ -746,28 +746,28 @@
 <li>Create a virtual environment and install the dependencies</li>
 </ul>
 <h3 id="creating-dev-enviornment">Creating dev enviornment</h3>
-<pre><code class="language-sh">micromamba create -n capfinder_env python=3.12
-micromamba activate capfinder_env
-</code></pre>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>micromamba<span class="w"> </span>create<span class="w"> </span>-n<span class="w"> </span>capfinder_env<span class="w"> </span><span class="nv">python</span><span class="o">=</span><span class="m">3</span>.12
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>micromamba<span class="w"> </span>activate<span class="w"> </span>capfinder_env
+</code></pre></div>
 <h3 id="cpu-installation">CPU installation</h3>
-<pre><code class="language-sh">poetry install --extras cpu
-</code></pre>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>poetry<span class="w"> </span>install<span class="w"> </span>--extras<span class="w"> </span>cpu
+</code></pre></div>
 <h3 id="gpu-installation-cuda-12">GPU installation (CUDA 12)</h3>
-<pre><code class="language-sh">poetry install --extras gpu
-poetry run pip install &quot;jax[cuda12]&quot; -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
-</code></pre>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>poetry<span class="w"> </span>install<span class="w"> </span>--extras<span class="w"> </span>gpu
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>poetry<span class="w"> </span>run<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;jax[cuda12]&quot;</span><span class="w"> </span>-f<span class="w"> </span>https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+</code></pre></div>
 <h3 id="tpu-installation">TPU installation</h3>
-<pre><code class="language-sh">poetry install --extras tpu
-poetry run pip install &quot;jax[tpu]&quot; -f https://storage.googleapis.com/jax-releases/libtpu_releases.html
-</code></pre>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>poetry<span class="w"> </span>install<span class="w"> </span>--extras<span class="w"> </span>tpu
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>poetry<span class="w"> </span>run<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;jax[tpu]&quot;</span><span class="w"> </span>-f<span class="w"> </span>https://storage.googleapis.com/jax-releases/libtpu_releases.html
+</code></pre></div>
 <ul>
 <li>Activate the virtual environment</li>
 </ul>
-<pre><code class="language-sh">poetry shell
-</code></pre>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>poetry<span class="w"> </span>shell
+</code></pre></div>
 <h3 id="testing">Testing</h3>
-<pre><code class="language-sh">pytest
-</code></pre>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>pytest
+</code></pre></div>
 <h3 id="documentation">Documentation</h3>
 <p>The documentation is automatically generated from the content of the <a href="./docs">docs directory</a> and from the docstrings
  of the public signatures of the source code. The documentation is updated and published as a <a href="https://pages.github.com/">Github project page
@@ -783,14 +783,14 @@ poetry run pip install &quot;jax[tpu]&quot; -f https://storage.googleapis.com/ja
 <p>Pre-commit hooks run all the auto-formatters (e.g. <code>black</code>, <code>isort</code>), linters (e.g. <code>mypy</code>, <code>flake8</code>), and other quality
  checks to make sure the changeset is in good shape before a commit/push happens.</p>
 <p>You can install the hooks with (runs for each commit):</p>
-<pre><code class="language-sh">pre-commit install
-</code></pre>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>pre-commit<span class="w"> </span>install
+</code></pre></div>
 <p>Or if you want them to run only for each push:</p>
-<pre><code class="language-sh">pre-commit install -t pre-push
-</code></pre>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>pre-commit<span class="w"> </span>install<span class="w"> </span>-t<span class="w"> </span>pre-push
+</code></pre></div>
 <p>Or if you want e.g. want to run all checks manually for all files:</p>
-<pre><code class="language-sh">pre-commit run --all-files
-</code></pre>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>pre-commit<span class="w"> </span>run<span class="w"> </span>--all-files
+</code></pre></div>
 
 
 
@@ -837,7 +837,7 @@ poetry run pip install &quot;jax[tpu]&quot; -f https://storage.googleapis.com/ja
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": ["content.code.copy"], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
       <script src="../assets/javascripts/bundle.fe8b6f2b.min.js"></script>
