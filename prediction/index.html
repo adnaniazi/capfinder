@@ -769,22 +769,30 @@
 </span></code></pre></div>
 <h4 id="performance-tips">Performance Tips</h4>
 <ol>
-<li><strong>CPU Usage</strong>: </li>
-<li>Increase <code>--n_cpus</code> for faster processing of POD5 and BAM data</li>
+<li>
+<p><strong>CPU Usage</strong>: </p>
+</li>
+<li>
+<p>Increase <code>--n_cpus</code> for faster processing of POD5 and BAM data</p>
+</li>
 <li>
 <p>CPU count doesn't affect inference speed (Step 4/5)</p>
 </li>
 <li>
 <p><strong>GPU Acceleration</strong>:</p>
 </li>
-<li>If you have a GPU, use <code>--dtype float16</code> for faster inference</li>
+<li>
+<p>If you have a GPU, use <code>--dtype float16</code> for faster inference</p>
+</li>
 <li>
 <p>Without a GPU, <code>float32</code> or <code>float64</code> may perform better</p>
 </li>
 <li>
 <p><strong>Batch Size</strong>:</p>
 </li>
-<li>Larger batch sizes can speed up inference but require more memory</li>
+<li>
+<p>Larger batch sizes can speed up inference but require more memory</p>
+</li>
 <li>
 <p>Adjust <code>--batch_size</code> based on your system's capabilities</p>
 </li>
@@ -803,7 +811,9 @@
 <li>
 <p><strong>Caching</strong>:</p>
 </li>
-<li>Use <code>--refresh-cache</code> if you've made changes to input data and need to regenerate intermediate results</li>
+<li>
+<p>Use <code>--refresh-cache</code> if you've made changes to input data and need to regenerate intermediate results</p>
+</li>
 </ol>
 <p>For more detailed information, run <code>capfinder predict-cap-types --help</code>.</p>
 
