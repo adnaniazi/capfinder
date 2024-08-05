@@ -714,17 +714,23 @@
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>micromamba<span class="w"> </span>activate<span class="w"> </span>capfinder_env
 </span></code></pre></div>
 <h3 id="installation">Installation</h3>
-<p>=== CPU 
-    <div class="language-sh highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>poetry<span class="w"> </span>install<span class="w"> </span>--extras<span class="w"> </span>cpu
-</span></code></pre></div></p>
-<p>=== GPU (CUDA 12)
-    <div class="language-sh highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>poetry<span class="w"> </span>install<span class="w"> </span>--extras<span class="w"> </span>gpu
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>poetry<span class="w"> </span>run<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;jax[cuda12]&quot;</span><span class="w"> </span>-f<span class="w"> </span>https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
-</span></code></pre></div></p>
-<p>=== TPU
-    <div class="language-sh highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>poetry<span class="w"> </span>install<span class="w"> </span>--extras<span class="w"> </span>tpu
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>poetry<span class="w"> </span>run<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;jax[tpu]&quot;</span><span class="w"> </span>-f<span class="w"> </span>https://storage.googleapis.com/jax-releases/libtpu_releases.html
-</span></code></pre></div></p>
+<p>=== CPU </p>
+<div class="language-text highlight"><pre><span></span><code>```sh
+poetry install --extras cpu
+```
+</code></pre></div>
+<p>=== GPU (CUDA 12)</p>
+<div class="language-text highlight"><pre><span></span><code>```sh
+poetry install --extras gpu
+poetry run pip install &quot;jax[cuda12]&quot; -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+```
+</code></pre></div>
+<p>=== TPU</p>
+<div class="language-text highlight"><pre><span></span><code>```sh
+poetry install --extras tpu
+poetry run pip install &quot;jax[tpu]&quot; -f https://storage.googleapis.com/jax-releases/libtpu_releases.html
+```
+</code></pre></div>
 <h3 id="testing">Testing</h3>
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>pytest
 </span></code></pre></div>
