@@ -556,7 +556,7 @@
   <h1>Installing the package</h1>
 
 <p>Capfinder can be installed with support for different hardware configurations. Choose the appropriate installation tab based on your hardware setup. This ensures you get the right dependencies for optimal performance on your system:</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:1"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">CPU-only</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:1"><input checked="checked" id="cpu-only" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="cpu-only">CPU-only</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block"></div>
 </div>
@@ -564,7 +564,7 @@
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>capfinder<span class="o">[</span>cpu<span class="o">]</span>
 </span></code></pre></div>
 <p>This installation is suitable for systems without GPU or TPU hardware.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="2:1"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">GPU (CUDA 12)</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:1"><input checked="checked" id="gpu-cuda-12" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="gpu-cuda-12">GPU (CUDA 12)</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block"></div>
 </div>
@@ -574,7 +574,7 @@
 <p>Use this installation for systems with NVIDIA GPUs supporting CUDA 12.
 CopyCapfinder depends on JAX internally for using GPUs. JAX requires CUDA to work. The CUDA requirements for Capfinder are the same as the CUDA requirements for JAX.</p>
 <p>For more information on the required CUDA version for JAX, refer to the <a href="https://jax.readthedocs.io/en/latest/installation.html">JAX installation guide</a>.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="3:1"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">TPU</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="3:1"><input checked="checked" id="tpu" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="tpu">TPU</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block"></div>
 </div>
@@ -603,6 +603,8 @@ CopyCapfinder depends on JAX internally for using GPUs. JAX requires CUDA to wor
             </div>
           
           
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var tab,labels=set.querySelector(".tabbed-labels");for(tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
 <script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
         </div>
         
@@ -632,7 +634,7 @@ CopyCapfinder depends on JAX internally for using GPUs. JAX requires CUDA to wor
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "..", "features": ["content.code.copy"], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": ["content.code.copy", "content.tabs.link"], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
       <script src="../assets/javascripts/bundle.fe8b6f2b.min.js"></script>
