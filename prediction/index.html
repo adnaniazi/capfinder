@@ -633,18 +633,25 @@
 <p><code>--pod5_dir</code> or <code>-p</code>: Path to directory containing POD5 files</p>
 <p><code>--output_dir</code> or <code>-o</code>: Path to the output directory for prediction results and logs</p>
 <h4 id="additional-options">Additional Options</h4>
-<p><code>--n_cpus</code> or <code>-n</code>: Number of CPUs to use for parallel processing. Default is 1</p>
-<p>:   Multiple CPUs are used during processing for POD5 file and BAM data (Step 1/5). Increasing this number speeds up POD5 and BAM processing. For inference (Step 4/5), only a single CPU is used no matter how many CPUs you have specified. For faster inference, have a GPU available (it will be detected automatically) and set dtype to <code>float16</code></p>
-<p><code>Lorem ipsum dolor sit amet</code></p>
-<p>:   Sed sagittis eleifend rutrum. Donec vitae suscipit est. Nullam tempus
-    tellus non sem sollicitudin, quis rutrum leo facilisis.</p>
-<p><code>Cras arcu libero</code></p>
-<p>:   Aliquam metus eros, pretium sed nulla venenatis, faucibus auctor ex. Proin
-    ut eros sed sapien ullamcorper consequat. Nunc ligula ante.</p>
-<div class="language-text highlight"><pre><span></span><code>Duis mollis est eget nibh volutpat, fermentum aliquet dui mollis.
+<dl>
+<dt><code>--n_cpus</code> or <code>-n</code>: Number of CPUs to use for parallel processing. Default is 1</dt>
+<dd>
+<p>Multiple CPUs are used during processing for POD5 file and BAM data (Step 1/5). Increasing this number speeds up POD5 and BAM processing. For inference (Step 4/5), only a single CPU is used no matter how many CPUs you have specified. For faster inference, have a GPU available (it will be detected automatically) and set dtype to <code>float16</code></p>
+</dd>
+<dt><code>Lorem ipsum dolor sit amet</code></dt>
+<dd>
+<p>Sed sagittis eleifend rutrum. Donec vitae suscipit est. Nullam tempus
+tellus non sem sollicitudin, quis rutrum leo facilisis.</p>
+</dd>
+<dt><code>Cras arcu libero</code></dt>
+<dd>
+<p>Aliquam metus eros, pretium sed nulla venenatis, faucibus auctor ex. Proin
+ut eros sed sapien ullamcorper consequat. Nunc ligula ante.</p>
+<p>Duis mollis est eget nibh volutpat, fermentum aliquet dui mollis.
 Nam vulputate tincidunt fringilla.
-Nullam dignissim ultrices urna non auctor.
-</code></pre></div>
+Nullam dignissim ultrices urna non auctor.</p>
+</dd>
+</dl>
 <ul>
 <li>
 <p><code>--dtype</code> or <code>-d</code>: Data type for model input. Valid values are <code>float16</code>, <code>float32</code>, or <code>float64</code>. Default is 'float16'</p>
