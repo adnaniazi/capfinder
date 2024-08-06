@@ -634,7 +634,7 @@
 <p><code>--output_dir</code> or <code>-o</code>: Path to the output directory for prediction results and logs</p>
 <h4 id="additional-options">Additional Options</h4>
 <p><code>--n_cpus</code> or <code>-n</code>: Number of CPUs to use for parallel processing. Default is 1</p>
-<p>Multiple CPUs are used during processing for POD5 file and BAM data (Step 1/5). Increasing this number speeds up POD5 and BAM processing. For inference (Step 4/5), only a single CPU is used no matter how many CPUs you have specified. For faster inference, have a GPU available (it will be detected automatically) and set dtype to <code>float16</code></p>
+<p>:   Multiple CPUs are used during processing for POD5 file and BAM data (Step 1/5). Increasing this number speeds up POD5 and BAM processing. For inference (Step 4/5), only a single CPU is used no matter how many CPUs you have specified. For faster inference, have a GPU available (it will be detected automatically) and set dtype to <code>float16</code></p>
 <ul>
 <li>
 <p><code>--dtype</code> or <code>-d</code>: Data type for model input. Valid values are <code>float16</code>, <code>float32</code>, or <code>float64</code>. Default is 'float16'</p>
@@ -647,12 +647,10 @@
 </li>
 <li>
 <p><code>--batch_size</code> or <code>-bs</code>: Batch size for model inference. Default is 128</p>
-</li>
-<li>
-<p>Larger batch sizes can speed up inference but require more memory. </p>
-</li>
-<li>
-<p>If the code crashes during step 4/5, you have probably set too high a batch size.</p>
+<ul>
+<li>Larger batch sizes can speed up inference but require more memory. </li>
+<li>If the code crashes during step 4/5, you have probably set too high a batch size.</li>
+</ul>
 </li>
 <li>
 <p><code>--plot-signal</code> / <code>--no-plot-signal</code>: Whether to plot extracted cap signal or not. Default is --no-plot-signal</p>
