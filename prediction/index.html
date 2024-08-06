@@ -688,48 +688,42 @@
 <ol>
 <li>
 <p><strong>CPU Usage</strong>: </p>
-</li>
-<li>
-<p>Increase <code>--n_cpus</code> for faster processing of POD5 and BAM data</p>
-</li>
-<li>
-<p>CPU count doesn't affect inference speed (Step 4/5)</p>
+<ul>
+<li>Increase <code>--n_cpus</code> for faster processing of POD5 and BAM data</li>
+<li>CPU count doesn't affect inference speed (Step 4/5)</li>
+</ul>
 </li>
 <li>
 <p><strong>GPU Acceleration</strong>:</p>
-</li>
-<li>
-<p>If you have a GPU, use <code>--dtype float16</code> for faster inference</p>
-</li>
-<li>
-<p>Without a GPU, <code>float32</code> or <code>float64</code> may perform better</p>
+<ul>
+<li>If you have a GPU, use <code>--dtype float16</code> for faster inference</li>
+<li>Without a GPU, <code>float32</code> or <code>float64</code> may perform better</li>
+</ul>
 </li>
 <li>
 <p><strong>Batch Size</strong>:</p>
-</li>
-<li>
-<p>Larger batch sizes can speed up inference but require more memory</p>
-</li>
-<li>
-<p>Adjust <code>--batch_size</code> based on your system's capabilities</p>
+<ul>
+<li>Larger batch sizes can speed up inference but require more memory</li>
+<li>Adjust <code>--batch_size</code> based on your system's capabilities</li>
+</ul>
 </li>
 <li>
 <p><strong>Plotting</strong>:</p>
-</li>
-<li>
-<p>Use <code>--no-plot-signal</code> to skip signal plotting for faster processing</p>
+<ul>
+<li>Use <code>--no-plot-signal</code> to skip signal plotting for faster processing</li>
+</ul>
 </li>
 <li>
 <p><strong>Debugging</strong>:</p>
-</li>
-<li>
-<p>Enable <code>--debug</code> for detailed logging when troubleshooting</p>
+<ul>
+<li>Enable <code>--debug</code> for detailed logging when troubleshooting</li>
+</ul>
 </li>
 <li>
 <p><strong>Caching</strong>:</p>
-</li>
-<li>
-<p>Use <code>--refresh-cache</code> if you've made changes to input data and need to regenerate intermediate results</p>
+<ul>
+<li>Use <code>--refresh-cache</code> if you've made changes to input data and need to regenerate intermediate results</li>
+</ul>
 </li>
 </ol>
 <p>For more detailed information, run <code>capfinder predict-cap-types --help</code>.</p>
