@@ -428,15 +428,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#performance-tips" class="md-nav__link">
-    <span class="md-ellipsis">
-      Performance Tips
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -593,15 +584,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#performance-tips" class="md-nav__link">
-    <span class="md-ellipsis">
-      Performance Tips
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -638,53 +620,26 @@
 <dd>
 <p>Multiple CPUs are used during processing for POD5 file and BAM data (Step 1/5). Increasing this number speeds up POD5 and BAM processing. For inference (Step 4/5), only a single CPU is used no matter how many CPUs you have specified. For faster inference, have a GPU available (it will be detected automatically) and set dtype to <code>float16</code></p>
 </dd>
-<dt><code>Lorem ipsum dolor sit amet</code></dt>
+<dt><code>--dtype</code> or <code>-d</code>: Data type for model input. Valid values are <code>float16</code>, <code>float32</code>, or <code>float64</code>. Default is 'float16'</dt>
 <dd>
-<p>Sed sagittis eleifend rutrum. Donec vitae suscipit est. Nullam tempus
-tellus non sem sollicitudin, quis rutrum leo facilisis.</p>
+<p>Without a GPU, use <code>float32</code> or <code>float64</code> for better performance. If you have a GPU, then use <code>float16</code> for faster inference</p>
 </dd>
-<dt><code>Cras arcu libero</code></dt>
+<dt><code>--batch_size</code> or <code>-bs</code>: Batch size for model inference. Default is 128</dt>
 <dd>
-<p>Aliquam metus eros, pretium sed nulla venenatis, faucibus auctor ex. Proin
-ut eros sed sapien ullamcorper consequat. Nunc ligula ante.</p>
-<p>Duis mollis est eget nibh volutpat, fermentum aliquet dui mollis.
-Nam vulputate tincidunt fringilla.
-Nullam dignissim ultrices urna non auctor.</p>
+<p>Larger batch sizes can speed up inference but require more memory. If the code crashes during step 4/5, you have probably set too high a batch size.</p>
+</dd>
+<dt><code>--plot-signal</code> / <code>--no-plot-signal</code>: Whether to plot extracted cap signal or not. Default is --no-plot-signal</dt>
+<dd>
+<p>Saving plots can help you plot the read's signal, and plot the signal for cap and flanking bases(&#177;5).</p>
+</dd>
+<dt><code>--debug</code> / <code>--no-debug</code>: Enable debug mode for more detailed logging. Default is --no-debug</dt>
+<dd>
+<p>The option can prints which function is creating a particular log output. This is helpful in during debugging.</p>
 </dd>
 </dl>
-<ul>
-<li>
-<p><code>--dtype</code> or <code>-d</code>: Data type for model input. Valid values are <code>float16</code>, <code>float32</code>, or <code>float64</code>. Default is 'float16'</p>
-</li>
-<li>
-<p>Without a GPU, use <code>float32</code> or <code>float64</code> for better performance</p>
-</li>
-<li>
-<p>With a GPU, use <code>float16</code> for faster inference</p>
-</li>
-<li>
-<p><code>--batch_size</code> or <code>-bs</code>: Batch size for model inference. Default is 128</p>
-<ul>
-<li>Larger batch sizes can speed up inference but require more memory. </li>
-<li>If the code crashes during step 4/5, you have probably set too high a batch size.</li>
-</ul>
-</li>
-<li>
-<p><code>--plot-signal</code> / <code>--no-plot-signal</code>: Whether to plot extracted cap signal or not. Default is --no-plot-signal</p>
-</li>
-<li>
-<p>Saving plots is can help you plot the read's signal, and plot the signal for cap and flanking bases(&#177;5).</p>
-</li>
-<li>
-<p><code>--debug</code> / <code>--no-debug</code>: Enable debug mode for more detailed logging. Default is --no-debug</p>
-</li>
-<li>
 <p><code>--refresh-cache</code> / <code>--no-refresh-cache</code>: Refresh the cache for intermediate results. Default is --no-refresh-cache</p>
-</li>
-<li>
+<p>If you input data has changed (for example you added one more POD5 file in your POD5 directory) then you must use <code>--refresh-cache</code> to compute all steps again and not load them from cache that hold results from your previous run.</p>
 <p><code>--help</code>: Show the help message and exit</p>
-</li>
-</ul>
 <div class="admonition example">
 <p class="admonition-title">Example</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>capfinder predict-cap-types \
@@ -699,7 +654,8 @@ Nullam dignissim ultrices urna non auctor.</p>
 </span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    --no-refresh-cache
 </span></code></pre></div>
 </div>
-<h4 id="performance-tips">Performance Tips</h4>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
 <ol>
 <li>
 <p><strong>CPU Usage</strong>: </p>
@@ -742,6 +698,7 @@ Nullam dignissim ultrices urna non auctor.</p>
 </li>
 </ol>
 <p>For more detailed information, run <code>capfinder predict-cap-types --help</code>.</p>
+</div>
 
 
 
