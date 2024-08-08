@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Fixed
 - Issues with pip installation
 
+## [0.3.1] - 2024-08-08
+### Fixed
+- Issues with pip installation
+
 ## [0.3.0] - 2024-08-08
 ### Fixed
 - Issues with pip installation
@@ -104,7 +108,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Added
 - Basic skeleton of the package and tested it
 
-[Unreleased]: https://github.com/adnaniazi/capfinder/compare/0.3.0...master
+[Unreleased]: https://github.com/adnaniazi/capfinder/compare/0.3.1...master
+[0.3.1]: https://github.com/adnaniazi/capfinder/compare/0.3.0...0.3.1
 [0.3.0]: https://github.com/adnaniazi/capfinder/compare/0.2.9...0.3.0
 [0.2.9]: https://github.com/adnaniazi/capfinder/compare/0.2.8...0.2.9
 [0.2.8]: https://github.com/adnaniazi/capfinder/compare/0.2.7...0.2.8
