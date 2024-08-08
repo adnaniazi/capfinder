@@ -522,26 +522,26 @@ Here we have created a Python 3.12 environment using micromamba. Next, we activa
 </div>
 <div class="admonition failure">
 <p class="admonition-title">Error 1</p>
-<p>In case you encounter the following error:
-´´´bash
+<p>In case you encounter the following error:</p>
+<p>´´´bash
 ImportError: /tmp/pip-build-env-qsdot3t6/overlay/lib/python3.12/site-packages/Cython/Utils.cp
 note: This error originates from a subprocess, and is likely not a problem with pip.
 ERROR: Failed building wheel for pysam</p>
 <p>Failed to build pysam</p>
 <p>ERROR: Could not build wheels for pysam, which is required to install pyproject.toml-based projects 
 ´´´</p>
-<p>You should first do the following in terminal:
-´´´bash
+<p>You should first do the following in terminal:</p>
+<p>´´´bash
 mkdir "/path/to/temp/directory"
 chmod +x "/path/to/temp/directory"
 export TMPDIR="/path/to/temp/directory"
-´´´
-Now try to reinstall <code>capfinder</code></p>
+´´´</p>
+<p>Now try to reinstall <code>capfinder</code></p>
 </div>
 <div class="admonition failure">
 <p class="admonition-title">Error 1</p>
-<p>In case you encounter the following error:
-´´´bash
+<p>In case you encounter the following error:</p>
+<p>´´´bash
 note: use option -std=c99 or -std=gnu99 to compile your code
 error: command '/usr/bin/gcc' failed with exit code 1
 [end of output]</p>
@@ -550,12 +550,12 @@ ERROR: Failed building wheel for pysam
 Failed to build pysam
 ERROR: Could not build wheels for pysam, which is required to install pyproject.toml-based projects
 ´´´</p>
-<p>You should first do the following in terminal:
-´´´bash
+<p>You should first do the following in terminal:</p>
+<p>´´´bash
 export CFLAGS="-std=c99 -D_GNU_SOURCE $CFLAGS" 
 export LDFLAGS="-std=c99 $LDFLAGS"
-´´´
-Now try to reinstall <code>capfinder</code></p>
+´´´</p>
+<p>Now try to reinstall <code>capfinder</code></p>
 </div>
 
 
