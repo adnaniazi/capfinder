@@ -67,7 +67,7 @@ name = "pypi"
 priority = "primary"
 
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 autoflake = "*"
 black = "*"
 flake8 = "*"
@@ -90,9 +90,8 @@ pytest-cov = "*"
 python-kacl = "*"
 pyupgrade = "*"
 tryceratops = "*"
-
-[tool.poetry.group.dev.dependencies]
 ruff = "^0.5.1"
+types-setuptools = "*"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
