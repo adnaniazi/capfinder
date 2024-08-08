@@ -510,7 +510,7 @@ Here we have created a Python 3.12 environment using micromamba. Next, we activa
 <p>For more information on the required CUDA version for JAX, refer to the <a href="https://jax.readthedocs.io/en/latest/installation.html">JAX installation guide</a>.</p>
 </div>
 <div class="tabbed-block">
-<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>pip install capfinder &quot;jax[tpu]&quot; -f https://storage.googleapis.com/jax-releases/libtpu_releases.html
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>pip install capfinder -U &quot;jax[tpu]&quot; -f https://storage.googleapis.com/jax-releases/libtpu_releases.html
 </span></code></pre></div>
 <p>This installation is for systems with TPU (Tensor Processing Unit) hardware.</p>
 </div>
@@ -519,6 +519,43 @@ Here we have created a Python 3.12 environment using micromamba. Next, we activa
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Make sure to choose the installation command that matches your hardware configuration for optimal performance.</p>
+</div>
+<div class="admonition failure">
+<p class="admonition-title">Error 1</p>
+<p>In case you encounter the following error:
+´´´bash
+ImportError: /tmp/pip-build-env-qsdot3t6/overlay/lib/python3.12/site-packages/Cython/Utils.cp
+note: This error originates from a subprocess, and is likely not a problem with pip.
+ERROR: Failed building wheel for pysam</p>
+<p>Failed to build pysam</p>
+<p>ERROR: Could not build wheels for pysam, which is required to install pyproject.toml-based projects 
+´´´</p>
+<p>You should first do the following in terminal:
+´´´bash
+mkdir "/path/to/temp/directory"
+chmod +x "/path/to/temp/directory"
+export TMPDIR="/path/to/temp/directory"
+´´´
+Now try to reinstall <code>capfinder</code></p>
+</div>
+<div class="admonition failure">
+<p class="admonition-title">Error 1</p>
+<p>In case you encounter the following error:
+´´´bash
+note: use option -std=c99 or -std=gnu99 to compile your code
+error: command '/usr/bin/gcc' failed with exit code 1
+[end of output]</p>
+<p>note: This error originates from a subprocess, and is likely not a problem with pip.
+ERROR: Failed building wheel for pysam
+Failed to build pysam
+ERROR: Could not build wheels for pysam, which is required to install pyproject.toml-based projects
+´´´</p>
+<p>You should first do the following in terminal:
+´´´bash
+export CFLAGS="-std=c99 -D_GNU_SOURCE $CFLAGS" 
+export LDFLAGS="-std=c99 $LDFLAGS"
+´´´
+Now try to reinstall <code>capfinder</code></p>
 </div>
 
 
