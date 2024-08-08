@@ -2,9 +2,7 @@
 name = "capfinder"
 version = "0.3.0"
 description = "A package for decoding RNA cap types"
-authors = [
-    "Adnan M. Niazi <adnaniazi@gmail.com>",
-]
+authors = ["Adnan M. Niazi <adnaniazi@gmail.com>"]
 license = "MIT"
 readme = "README.md"
 
@@ -13,24 +11,22 @@ homepage = "https://adnaniazi.github.io/capfinder"
 repository = "https://github.com/adnaniazi/capfinder"
 
 classifiers = [
-  "Development Status :: 4 - Beta",
-  "Intended Audience :: Developers",
-  "Operating System :: OS Independent",
-  "Programming Language :: Python",
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-  "Topic :: Software Development :: Libraries :: Python Modules",
-  "Typing :: Typed",
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
 ]
 
-packages = [
-    { include = "capfinder", from = "src" }
-]
+packages = [{ include = "capfinder", from = "src" }]
 
 [tool.poetry.dependencies]
-python = ">3.9, <3.13"
+python = ">=3.10, <3.13"
 parasail = "^1.3.4"
 mpire = "^2.8.0"
 tqdm = "^4.66.1"
@@ -60,7 +56,8 @@ typer = "^0.12.3"
 imbalanced-learn = "^0.12.3"
 
 # JAX dependencies
-jax = {version = "*", optional = true}
+jax = { version = "*", optional = true }
+jaxlib = "^0.4.31"
 
 [tool.poetry.extras]
 cpu = ["jax"]
@@ -83,7 +80,7 @@ flake8-debugger = "*"
 flake8-eradicate = "*"
 flake8-logging-format = "*"
 isort = "*"
-mkdocstrings = {version = ">=0.18", extras = ["python"]}
+mkdocstrings = { version = ">=0.18", extras = ["python"] }
 mkdocs-material = "*"
 mypy = "*"
 pep8-naming = "*"
@@ -121,10 +118,7 @@ addopts = """\
 
 [tool.coverage.report]
 fail_under = 0
-exclude_lines = [
-    'if TYPE_CHECKING:',
-    'pragma: no cover'
-]
+exclude_lines = ['if TYPE_CHECKING:', 'pragma: no cover']
 
 [tool.mypy]
 disallow_any_unimported = false
