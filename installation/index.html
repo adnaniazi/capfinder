@@ -499,18 +499,18 @@ Here we have created a Python 3.12 environment using micromamba. Next, we activa
 <div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="cpu-only" name="__tabbed_1" type="radio" /><input id="gpu-cuda-12" name="__tabbed_1" type="radio" /><input id="tpu" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="cpu-only">CPU-only</label><label for="gpu-cuda-12">GPU (CUDA 12)</label><label for="tpu">TPU</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip install capfinder[cpu]
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip install capfinder
 </span></code></pre></div>
 <p>This installation is suitable for systems without GPU or TPU hardware.</p>
 </div>
 <div class="tabbed-block">
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>pip install capfinder[gpu] &quot;jax[cuda12]&quot; -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>pip install capfinder -U &quot;jax[cuda12]&quot;
 </span></code></pre></div>
 <p>Use this installation for systems with NVIDIA GPUs supporting CUDA 12. Capfinder depends on JAX internally for using GPUs. JAX requires CUDA to work. The CUDA requirements for Capfinder are the same as the CUDA requirements for JAX.</p>
 <p>For more information on the required CUDA version for JAX, refer to the <a href="https://jax.readthedocs.io/en/latest/installation.html">JAX installation guide</a>.</p>
 </div>
 <div class="tabbed-block">
-<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>pip install capfinder[tpu] &quot;jax[tpu]&quot; -f https://storage.googleapis.com/jax-releases/libtpu_releases.html
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>pip install capfinder &quot;jax[tpu]&quot; -f https://storage.googleapis.com/jax-releases/libtpu_releases.html
 </span></code></pre></div>
 <p>This installation is for systems with TPU (Tensor Processing Unit) hardware.</p>
 </div>
