@@ -163,7 +163,7 @@ def csv_to_sqlite(
     with open(csv_file) as f:
         csv_reader = csv.DictReader(f)
         chunk = []
-        with tqdm(total=total_rows) as pbar:
+        with tqdm(total=total_rows, unit="reads") as pbar:
             for rw in csv_reader:
                 chunk.append(
                     (
@@ -210,7 +210,7 @@ def join_tables(
         csv_writer = csv.writer(f)
         csv_writer.writerow(["read_id", "pod5_file", "predicted_cap"])  # Write header
 
-        with tqdm(total=total_rows) as pbar:
+        with tqdm(total=total_rows, unit="reads") as pbar:
             while True:
                 results = cursor.fetchmany(chunk_size)
                 if not results:

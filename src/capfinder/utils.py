@@ -6,12 +6,51 @@ Date: 2024-02-28
 """
 
 import gzip
+import json
+import os
 import shutil
 import sqlite3
-from typing import IO, Tuple, Type, Union, cast
+from pathlib import Path
+from typing import IO, Dict, Optional, Tuple, Type, Union, cast
 
+import comet_ml
 import numpy as np
+from comet_ml import Experiment  # Import CometML before keras
 from loguru import logger
+
+
+def initialize_comet_ml_experiment(project_name: str) -> Experiment:
+    """Initialize a CometML experiment for logging.
+
+    Parameters:
+    -----------
+    project_name: str
+        The name of the CometML project.
+
+    Returns:
+    --------
+    Experiment:
+        An instance of the CometML Experiment class.
+    """
+    comet_api_key = os.getenv("COMET_API_KEY")
+    comet_ml.init(project_name=project_name, api_key=comet_api_key)
+    if comet_api_key:
+        logger.info("Found CometML API key!")
+        experiment = Experiment(
+            auto_output_logging="native",
+            auto_histogram_weight_logging=True,
+            auto_histogram_gradient_logging=False,
+            auto_histogram_activation_logging=False,
+        )
+    else:
+        experiment = None
+        logger.error(
+            """CometML API key is not set.
+            Please set it as an environment variable using
+            export COMET_API_KEY="YOUR_API_KEY"."""
+        )
+
+    return experiment
 
 
 def file_opener(filename: str) -> Union[IO[str], IO[bytes]]:
@@ -48,28 +87,6 @@ def open_database(
     conn = sqlite3.connect(database_path)
     cursor = conn.cursor()
     return conn, cursor
-
-
-def map_cap_int_to_name(cap_class: int) -> str:
-    """Map the integer representation of the CAP class to the CAP name.
-
-    Args:
-        cap_class (int): Integer representation of the CAP class.
-
-    Returns:
-        cap_name (str): The name of the CAP class.
-    """
-    cap_mapping = {
-        0: "cap_0",
-        1: "cap_1",
-        2: "cap_2",
-        3: "cap_2-1",
-        4: "cap_TMG",
-        5: "cap_NAD",
-        6: "cap_FAD",
-        -99: "cap_unknown",
-    }
-    return cap_mapping[cap_class]
 
 
 def get_dtype(dtype: str) -> Type[np.floating]:
@@ -169,3 +186,123 @@ def log_output(description: str) -> None:
     width = get_terminal_width()
     text = f"\n{'-' * width}\n{description}"
     logger.info(text)
+
+
+DEFAULT_CAP_MAPPING: Dict[int, str] = {
+    -99: "cap_unknown",
+    0: "cap_0",
+    1: "cap_1",
+    2: "cap_2",
+    3: "cap_2-1",
+}
+# Global cap mapping that will be used in the application
+global CAP_MAPPING
+CAP_MAPPING: Dict[int, str] = {}
+
+# Use pathlib for cross-platform compatibility
+CONFIG_DIR = Path.home() / ".capfinder"
+CUSTOM_MAPPING_PATH = CONFIG_DIR / "custom_mapping.json"
+
+
+def ensure_config_dir() -> None:
+    """Ensure the configuration directory exists."""
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def initialize_cap_mapping() -> None:
+    """Initialize the cap mapping file if it doesn't exist."""
+    global CAP_MAPPING
+    ensure_config_dir()
+    if not CUSTOM_MAPPING_PATH.exists() or CUSTOM_MAPPING_PATH.stat().st_size == 0:
+        save_custom_mapping(DEFAULT_CAP_MAPPING)
+    load_custom_mapping()
+
+
+def map_cap_int_to_name(cap_class: int) -> str:
+    """Map the integer representation of the CAP class to the CAP name."""
+    global CAP_MAPPING
+
+    return CAP_MAPPING.get(cap_class, f"Unknown cap: {cap_class}")
+
+
+def update_cap_mapping(new_mapping: Dict[int, str]) -> None:
+    """Update the CAP_MAPPING with new entries."""
+    global CAP_MAPPING
+    CAP_MAPPING.update(new_mapping)
+    save_custom_mapping(CAP_MAPPING)
+
+
+def load_custom_mapping() -> None:
+    """Load custom mapping from JSON file if it exists."""
+    global CAP_MAPPING
+    try:
+        if CUSTOM_MAPPING_PATH.exists():
+            with CUSTOM_MAPPING_PATH.open("r") as f:
+                loaded_mapping = json.load(f)
+            # Convert string keys back to integers
+            CAP_MAPPING = {int(k): v for k, v in loaded_mapping.items()}
+        else:
+            CAP_MAPPING = DEFAULT_CAP_MAPPING.copy()
+    except json.JSONDecodeError:
+        logger.error(
+            "Failed to decode JSON from custom mapping file. Using default mapping."
+        )
+        CAP_MAPPING = DEFAULT_CAP_MAPPING.copy()
+    except Exception as e:
+        logger.error(
+            f"Unexpected error loading custom mapping: {e}. Using default mapping."
+        )
+        CAP_MAPPING = DEFAULT_CAP_MAPPING.copy()
+
+    if not CAP_MAPPING:
+        logger.warning("Loaded mapping is empty. Using default mapping.")
+        CAP_MAPPING = DEFAULT_CAP_MAPPING.copy()
+
+
+def save_custom_mapping(mapping: Dict[int, str]) -> None:
+    """Save the given mapping to JSON file."""
+    ensure_config_dir()
+    try:
+        with CUSTOM_MAPPING_PATH.open("w") as f:
+            json.dump(mapping, f, indent=2)
+    except Exception as e:
+        logger.error(f"Failed to save custom mapping: {e}")
+        raise
+
+
+def get_next_available_cap_number() -> int:
+    """
+    Find the next available cap number in the sequence.
+
+    Returns:
+    int: The next available cap number.
+    """
+    global CAP_MAPPING
+
+    existing_caps = set(CAP_MAPPING.keys())
+    existing_caps.discard(-99)  # Remove the special 'unknown' cap
+    if not existing_caps:
+        return 0
+    max_cap = max(existing_caps)
+    next_cap = max_cap + 1
+    return next_cap
+
+
+def is_cap_name_unique(new_cap_name: str) -> Optional[int]:
+    """
+    Check if the given cap name is unique among existing cap mappings.
+
+    Args:
+    new_cap_name (str): The new cap name to check for uniqueness.
+
+    Returns:
+    Optional[int]: The integer label of the existing cap with the same name, if any. None otherwise.
+    """
+    global CAP_MAPPING
+    for cap_int, cap_name in CAP_MAPPING.items():
+        if cap_name.lower() == new_cap_name.lower():
+            return cap_int
+    return None
+
+
+initialize_cap_mapping()

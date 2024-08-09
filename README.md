@@ -1,4 +1,4 @@
-# capfinder
+# Capfinder - A Tool for mRNA Cap type Prediction
 
 [![PyPI](https://img.shields.io/pypi/v/capfinder?style=flat-square)](https://pypi.python.org/pypi/capfinder/)
 [![PyPi Downloads](https://img.shields.io/pypi/dm/capfinder)](https://pypistats.org/packages/capfinder)
@@ -17,130 +17,52 @@
 
 ---
 
-A package for decoding RNA cap types
+Capfinder is a tool for predicting RNA cap types in mRNAs sequenced using Oxford Nanopore Technologies (ONT) RNA004 chemistry. It analyzes native RNA sequencing data to determine the cap structure of individual transcripts.
 
+### Supported Cap Types
+Currently, Capfinder can predict the following cap types:
+
+- Cap0
+- Cap1
+- Cap2
+- Cap2,-1
+
+### Requirements for mRNA data
+For Capfinder to work correctly, the  m7G moiety in mRNA samples must be first be removed from the 5' end of the mRNA (decapping).
+The following 52-nucleotide oligonucleotide extension (OTE) must be ligated to the 5' end of each mRNA molecule:
+```sh
+5'-GCTTTCGTTCGTCTCCGGACTTATCGCACCACCTATCCATCATCAGTACTGT-3'
+```
+---
 # Installing Capfinder
 
-## 1. Installing and activate new Python Environment
-Please make a fresh conda/micromamba env with required supported Python versions like so:
-```sh
-micromamba create -n capfinder_env python=3.12
-```
-Next, activate the newly created conda env:
-```sh
-micromamba activate capfinder_env
-```
+### 1. Make and activate a new Python Environment
+- [Creating new environment](docs/environment.md)
 
-## 2. Installing Capfinder package
 
-### CPU installation
-```sh
-pip install capfinder[cpu]
-```
 
-### GPU installation (CUDA 12)
-```sh
-pip install capfinder[gpu] "jax[cuda12]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
-```
-Capfinder depends on JAX internally for using GPUS. Jax requires CUDA to work. So the CUDA requierments for capfinder are the same as the CUDA requirements for JAX.
-For more information [here](https://jax.readthedocs.io/en/latest/installation.html) on the required CUDA version for JAX.
+### 2. Install Capfinder package
 
-### TPU installation
-```sh
-pip install capfinder[tpu] "jax[tpu]" -f https://storage.googleapis.com/jax-releases/libtpu_releases.html
-```
+- [Installation](docs/installation.md)
 
-# 3. Updating Capfinder
+---
+# Usage
 
-If you are using an older version of Capfinder, and would like to upgrade to the latest version, then please do the following in your activate Python enviorment:
-### Updating Capfinder on CPU-based system
-```sh
-pip install capfinder[cpu]
-```
+### 1. Preprocessing: Basecalling and alignment
 
-### Updating Capfinder on GPU-based system
-```sh
-pip install capfinder[gpu]
-```
+- [Data Preprocessing](docs/preprocessing.md)
 
-### Updating Capfinder on TPU-based system
-```sh
-pip install capfinder[tpu]
-```
+
+### 2. Predicting Cap Types with Capfinder
+
+- [Usage Guide](docs/prediction.md)
+
+
+# Updating Capfinder
+
+- [Updating Capfinder](docs/updating.md)
 
 
 ## Development
 
-* Clone this repository
-* Requirements:
-  * [Poetry](https://python-poetry.org/)
-  * Python 3.7+
-* Create a virtual environment and install the dependencies
-
-### CPU installation
-```sh
-poetry install --extras cpu
-```
-
-### GPU installation (CUDA 12)
-```sh
-poetry install --extras gpu
-poetry run pip install "jax[cuda12]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
-```
-
-### TPU installation
-```sh
-poetry install --extras tpu
-poetry run pip install "jax[tpu]" -f https://storage.googleapis.com/jax-releases/libtpu_releases.html
-```
-
-* Activate the virtual environment
-
-```sh
-poetry shell
-```
-
-### Testing
-
-```sh
-pytest
-```
-
-### Documentation
-
-The documentation is automatically generated from the content of the [docs directory](./docs) and from the docstrings
- of the public signatures of the source code. The documentation is updated and published as a [Github project page
- ](https://pages.github.com/) automatically as part each release.
-
-### Releasing
-
-Trigger the [Draft release workflow](https://github.com/adnaniazi/capfinder/actions/workflows/draft_release.yml)
-(press _Run workflow_). This will update the changelog & version and create a GitHub release which is in _Draft_ state.
-
-Find the draft release from the
-[GitHub releases](https://github.com/adnaniazi/capfinder/releases) and publish it. When
- a release is published, it'll trigger [release](https://github.com/adnaniazi/capfinder/blob/master/.github/workflows/release.yml) workflow which creates PyPI
- release and deploys updated documentation.
-
-### Pre-commit
-
-Pre-commit hooks run all the auto-formatters (e.g. `black`, `isort`), linters (e.g. `mypy`, `flake8`), and other quality
- checks to make sure the changeset is in good shape before a commit/push happens.
-
-You can install the hooks with (runs for each commit):
-
-```sh
-pre-commit install
-```
-
-Or if you want them to run only for each push:
-
-```sh
-pre-commit install -t pre-push
-```
-
-Or if you want e.g. want to run all checks manually for all files:
-
-```sh
-pre-commit run --all-files
-```
+- [Development](docs/development.md)

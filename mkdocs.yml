@@ -1,8 +1,13 @@
-site_name: "capfinder"
+site_name: "Capfinder"
 repo_url: https://github.com/adnaniazi/capfinder
+
+
 
 theme:
   name: material
+  features:
+    - content.code.copy
+    - content.tabs.link
   palette:
     - scheme: default
       toggle:
@@ -15,12 +20,36 @@ theme:
 
 nav:
   - Introduction: 'index.md'
+  - Installation: 'installation.md'
+  - Usage:
+      - Data Preparation: 'preprocessing.md'
+      - Cap Prediction: 'prediction.md'
+  - Updating Capfinder: 'updating.md'
+  - Developer guide: 'development.md'
   - API Documentation: api_docs.md
   - Change Log: changelog.md
 
 markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
   - pymdownx.snippets:
       check_paths: true
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+      slugify: "pymdownx.slugs.slugify"
+      slug_case: lower
+  - def_list
+  - pymdownx.tasklist:
+      custom_checkbox: true
+
 
 plugins:
   - search:

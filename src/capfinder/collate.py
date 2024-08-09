@@ -479,11 +479,9 @@ def collate_bam_pod5(
     num_bam_records = get_total_records(bam_filepath)
     logger.info(f"Found {num_bam_records} BAM records!")
 
-    # 2. Make index database if it does not exist
+    # 2. Make index database
     database_path = os.path.join(output_dir, "database.db")
-    if not os.path.exists(database_path):
-        logger.info("Index database not found. Creating a new one.")
-        index(pod5_dir, output_dir)
+    index(pod5_dir, output_dir)
 
     # 3. If plots are requested, create the CSV file and the directories
     plots_csv_filepath = None  # Initialize the variable here

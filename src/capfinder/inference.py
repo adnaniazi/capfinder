@@ -300,16 +300,16 @@ def prepare_inference_data(
     predictions_csv_path = batched_inference.with_options(refresh_cache=refresh_cache)(
         dataset,
         model,
-        output_dir=os.path.join(output_dir, "3_cap_predictions"),
+        output_dir=os.path.join(output_dir, "1_cap_predictions"),
         csv_file_path=data_path,
     )
 
     log_step(5, 5, "Generating report")
     output_csv_path = os.path.join(
-        output_dir, "3_cap_predictions", "cap_predictions.csv"
+        output_dir, "1_cap_predictions", "cap_predictions.csv"
     )
     output_html_path = os.path.join(
-        output_dir, "3_cap_predictions", "cap_analysis_report.html"
+        output_dir, "1_cap_predictions", "cap_analysis_report.html"
     )
     generate_report_wrapper.with_options(refresh_cache=refresh_cache)(
         metadata_file=metadata_path,
@@ -390,7 +390,7 @@ if __name__ == "__main__":
     bam_filepath = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/8_20231114_randomCAP1v3_rna004/1_basecall_subset/sorted.calls.bam"
     pod5_dir = "/export/valenfs/data/raw_data/minion/2024_cap_ligation_data_v3_oligo/20240521_cap1/20231114_randomCAP1v3_rna004/"
     num_cpus = 3
-    output_dir = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/8_20231114_randomCAP1v3_rna004/test_OTE_vizs_july50"
+    output_dir = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/8_20231114_randomCAP1v3_rna004/test_OTE_vizs_july53"
     dtype: DtypeLiteral = "float16"
     reference = "GCTTTCGTTCGTCTCCGGACTTATCGCACCACCTATCCATCATCAGTACTGT"
     cap0_pos = 52
