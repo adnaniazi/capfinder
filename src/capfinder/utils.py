@@ -13,14 +13,17 @@ import sqlite3
 from pathlib import Path
 from typing import IO, Dict, Optional, Tuple, Type, Union, cast
 
-import comet_ml
 import numpy as np
 from comet_ml import Experiment  # Import CometML before keras
 from loguru import logger
 
 
 def initialize_comet_ml_experiment(project_name: str) -> Experiment:
-    """Initialize a CometML experiment for logging.
+    """
+    Initialize a CometML experiment for logging.
+
+    This function creates a CometML Experiment instance using the provided
+    project name and the COMET_API_KEY environment variable.
 
     Parameters:
     -----------
@@ -31,26 +34,42 @@ def initialize_comet_ml_experiment(project_name: str) -> Experiment:
     --------
     Experiment:
         An instance of the CometML Experiment class.
+
+    Raises:
+    -------
+    ValueError:
+        If the project_name is empty or None, or if the COMET_API_KEY is not set.
+    RuntimeError:
+        If there's an error initializing the experiment.
     """
+    if not project_name:
+        raise ValueError("Project name cannot be empty or None")
+
     comet_api_key = os.getenv("COMET_API_KEY")
-    comet_ml.init(project_name=project_name, api_key=comet_api_key)
-    if comet_api_key:
-        logger.info("Found CometML API key!")
+
+    if not comet_api_key:
+        logger.error(
+            "CometML API key is not set. Please set the COMET_API_KEY environment variable."
+        )
+        logger.info("Example: export COMET_API_KEY='YOUR_API_KEY'")
+        raise ValueError("COMET_API_KEY environment variable is not set")
+
+    try:
         experiment = Experiment(
+            api_key=comet_api_key,
+            project_name=project_name,
             auto_output_logging="native",
             auto_histogram_weight_logging=True,
             auto_histogram_gradient_logging=False,
             auto_histogram_activation_logging=False,
         )
-    else:
-        experiment = None
-        logger.error(
-            """CometML API key is not set.
-            Please set it as an environment variable using
-            export COMET_API_KEY="YOUR_API_KEY"."""
+        logger.info(
+            f"Successfully initialized CometML experiment for project: {project_name}"
         )
-
-    return experiment
+        return experiment
+    except Exception as e:
+        logger.error(f"Failed to initialize CometML experiment: {str(e)}")
+        raise RuntimeError(f"Failed to initialize CometML experiment: {str(e)}") from e
 
 
 def file_opener(filename: str) -> Union[IO[str], IO[bytes]]:

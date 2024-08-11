@@ -357,7 +357,9 @@ def predict_cap_types(
         refresh_cache (bool): Flag to refresh cached data.
         formatted_command (Optional[str]): The formatted command string to be logged.
     """
-    log_filepath = configure_logger(output_dir, show_location=debug_code)
+    log_filepath = configure_logger(
+        os.path.join(output_dir, "logs"), show_location=debug_code
+    )
     configure_prefect_logging(show_location=debug_code)
     version_info = version("capfinder")
     log_header(f"Using Capfinder v{version_info}")

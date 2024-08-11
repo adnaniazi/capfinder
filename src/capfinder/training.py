@@ -3,6 +3,7 @@ import shutil
 import signal
 import subprocess
 from datetime import datetime
+from importlib.metadata import version
 from typing import Dict, Literal, Optional, Tuple, Type, Union
 
 import numpy as np
@@ -16,9 +17,14 @@ from capfinder.attention_cnnlstm_model import (
     CapfinderHyperModel as AttentionCNNLSTMModel,
 )
 from capfinder.cnn_lstm_model import CapfinderHyperModel as CNNLSTMModel
-from capfinder.cyclic_learing_rate import CometLRLogger, CustomProgressCallback
-from capfinder.data_loader import load_datasets
+from capfinder.cyclic_learing_rate import (
+    CometLRLogger,
+    CustomProgressCallback,
+    CyclicLR,
+    SGDRScheduler,
+)
 from capfinder.encoder_model import CapfinderHyperModel as EncoderModel
+from capfinder.logger_config import configure_logger, configure_prefect_logging
 from capfinder.ml_libs import jax  # noqa
 from capfinder.ml_libs import (
     BayesianOptimization,
@@ -30,7 +36,12 @@ from capfinder.ml_libs import (
 )
 from capfinder.resnet_model import ResNetTimeSeriesHyper as ResnetModel
 from capfinder.train_etl import train_etl
-from capfinder.utils import initialize_comet_ml_experiment, map_cap_int_to_name
+from capfinder.utils import (
+    initialize_comet_ml_experiment,
+    log_header,
+    log_output,
+    map_cap_int_to_name,
+)
 
 # Declare and initialize global stop_training flag
 global stop_training
@@ -179,12 +190,11 @@ def save_model(
     return model_save_path
 
 
-def set_jax_as_backend() -> None:
-    """Set JAX as the backend for Keras distributed training.
+def set_data_distributed_training() -> None:
+    """
+    Set JAX as the backend for Keras training, with distributed training if multiple CUDA devices are available.
 
-    Parameters:
-    -----------
-    None
+    This function checks for available CUDA devices and sets up distributed training only if more than one is found.
 
     Returns:
     --------
@@ -193,23 +203,40 @@ def set_jax_as_backend() -> None:
     # Set the Keras backend to JAX
     logger.info(f"Backend for training: {keras.backend.backend()}")
 
-    # Retrieve available CPU devices
-    devices = jax.devices()
+    # Retrieve available devices
+    all_devices = jax.devices()
+    cuda_devices = [d for d in all_devices if d.platform == "gpu"]
 
     # Log available devices
-    for device in devices:
-        logger.info(f"Device available for training: {device}, Type: {device.platform}")
+    for device in all_devices:
+        logger.info(f"Device available: {device}, Type: {device.platform}")
 
-    # Define a 1D device mesh for data parallelism
-    mesh_1d = keras.distribution.DeviceMesh(
-        shape=(len(devices),), axis_names=["data"], devices=devices
-    )
+    if len(cuda_devices) > 1:
+        logger.info(
+            f"Multiple CUDA devices detected ({len(cuda_devices)}). Setting up distributed training."
+        )
 
-    # Create a DataParallel distribution
-    data_parallel = keras.distribution.DataParallel(device_mesh=mesh_1d)
+        # Define a 1D device mesh for data parallelism using only CUDA devices
+        mesh_1d = keras.distribution.DeviceMesh(
+            shape=(len(cuda_devices),), axis_names=["data"], devices=cuda_devices
+        )
 
-    # Set the global distribution
-    keras.distribution.set_distribution(data_parallel)
+        # Create a DataParallel distribution
+        data_parallel = keras.distribution.DataParallel(device_mesh=mesh_1d)
+
+        # Set the global distribution
+        keras.distribution.set_distribution(data_parallel)
+
+        logger.info("Distributed training setup complete.")
+    elif len(cuda_devices) == 1:
+        logger.info(
+            "Single CUDA device detected. Using standard (non-distributed) training."
+        )
+    else:
+        logger.info("No CUDA devices detected. Training will proceed on CPU.")
+
+    # Log the final training configuration
+    logger.info(f"Training will use {len(cuda_devices)} CUDA device(s).")
 
 
 def initialize_tuner(
@@ -317,7 +344,7 @@ def kill_gpu_processes() -> None:
 def get_shape_with_batch_size(
     dataset: tf.data.Dataset, batch_size: int
 ) -> Tuple[Tuple[int, ...], Tuple[int, ...]]:
-    features_spec, labels_spec = dataset.element_spec
+    features_spec, labels_spec, _ = dataset.element_spec
     feature_shape = list(features_spec.shape)
     label_shape = list(labels_spec.shape)
 
@@ -328,114 +355,219 @@ def get_shape_with_batch_size(
     return tuple(feature_shape), tuple(label_shape)
 
 
-def check_and_download_artifact(etl_params: dict) -> dict:
-    dataset_info = {}
-    experiment = initialize_comet_ml_experiment(project_name="capfinder-datasets")
+def count_examples(dataset: tf.data.Dataset, dataset_name: str) -> int:
+    """
+    Count the number of individual examples in a dataset.
 
-    art = experiment.get_artifact(
-        artifact_name="cap_data",
-        version_or_alias=etl_params["remote_dataset_version"],
+    Args:
+    dataset (tf.data.Dataset): The dataset to count examples from.
+    dataset_name (str): The name of the dataset.
+
+    Returns:
+    int: The number of examples in the dataset.
+    """
+    count = sum(
+        1 for _ in tqdm(dataset, desc=f"Examples in {dataset_name}", unit="examples")
     )
+    return count
 
-    current_art_version = f"{art.version.major}.{art.version.minor}.{art.version.patch}"
 
-    version_file = os.path.join(etl_params["save_dir"], "artifact_version.txt")
+def count_batches(dataset: tf.data.Dataset, dataset_name: str) -> int:
+    """
+    Count the number of individual examples in a dataset.
 
-    # Check if version file exists and read the stored version
-    if os.path.exists(version_file):
-        with open(version_file) as f:
-            stored_version = f.read().strip()
+    Args:
+    dataset (tf.data.Dataset): The dataset to count examples from.
+    dataset_name (str): The name of the dataset.
 
-        # If versions match, skip download
-        if stored_version == current_art_version:
-            print(
-                f"Artifact version {art.version} already downloaded. Skipping download."
-            )
-            dataset_info["version"] = current_art_version
-            dataset_info["etl_experiment_url"] = (
-                f"Used data version {current_art_version} from COMETs data registry"
-            )
-            experiment.end()
-            return dataset_info
-
-    # If versions don't match or file doesn't exist, download artifact
-    art.download(path=etl_params["save_dir"], overwrite_strategy=True)
-
-    # Save the new version to the file
-    with open(version_file, "w") as f:
-        f.write(current_art_version)
-
-    dataset_info["version"] = current_art_version
-    dataset_info["etl_experiment_url"] = (
-        f"Used data version {current_art_version} from COMETs data registry"
+    Returns:
+    int: The number of examples in the dataset.
+    """
+    count = sum(
+        1 for _ in tqdm(dataset, desc=f"Batches in {dataset_name}", unit="batches")
     )
+    return count
 
-    experiment.end()
-    return dataset_info
+
+def make_train_val_datasets(
+    dataset: tf.data.Dataset,
+    train_fraction: float = 0.8,
+    batch_size: int = 32,
+    buffer_size: int = 10000,
+) -> Tuple[tf.data.Dataset, tf.data.Dataset, int, int]:
+    """
+    Split a dataset into training and validation sets based on individual examples.
+
+    Args:
+    dataset (tf.data.Dataset): The input dataset to split.
+    train_fraction (float): Fraction of data to use for training (default: 0.8).
+    batch_size (int): Batch size for both datasets (default: 32).
+    buffer_size (int): Buffer size for shuffling (default: 10000).
+
+    Returns:
+    tuple: (train_dataset, val_dataset, steps_per_epoch, validation_steps)
+    """
+    logger.info(
+        "Spliting train dataset further into trainv and val datasets for tuning..."
+    )
+    # Ensure the dataset is unbatched
+    if isinstance(dataset.element_spec, tuple) and len(dataset.element_spec) > 1:
+        dataset = dataset.unbatch()
+
+    # Shuffle the dataset
+    dataset = dataset.shuffle(buffer_size=buffer_size)
+
+    # Count total examples
+    logger.info("Counting examples in train dataset...")
+    total_examples = count_examples(dataset, "train dataset")
+
+    # Calculate the split
+    train_size = int(total_examples * train_fraction)
+    val_size = total_examples - train_size
+
+    # Split the dataset
+    train_dataset = dataset.take(train_size)
+    val_dataset = dataset.skip(train_size)
+
+    # Batch the datasets
+    train_dataset = train_dataset.batch(batch_size)
+    val_dataset = val_dataset.batch(batch_size)
+
+    # Calculate steps
+    steps_per_epoch = (train_size + batch_size - 1) // batch_size
+    validation_steps = (val_size + batch_size - 1) // batch_size
+
+    # Prefetch for performance
+    train_dataset = train_dataset.prefetch(tf.data.AUTOTUNE)
+    val_dataset = val_dataset.prefetch(tf.data.AUTOTUNE)
+    logger.info(
+        f"{total_examples} examples split in {steps_per_epoch} trainv and {validation_steps} val batches"
+    )
+    return train_dataset, val_dataset, steps_per_epoch, validation_steps
+
+
+def select_lr_scheduler(
+    lr_scheduler_params: dict, train_size: int
+) -> Union[keras.callbacks.ReduceLROnPlateau, CyclicLR, SGDRScheduler]:
+    """
+    Selects and configures the learning rate scheduler based on the provided parameters.
+
+    Args:
+        lr_scheduler_params (dict): Configuration parameters for the learning rate scheduler.
+        train_size (int): Number of training examples, used for step size calculations.
+
+    Returns:
+        Union[keras.callbacks.ReduceLROnPlateau, CyclicLR, SGDRScheduler]: The selected learning rate scheduler.
+    """
+    scheduler_type = lr_scheduler_params["type"]
+
+    if scheduler_type == "reduce_lr_on_plateau":
+        rlr_params = lr_scheduler_params["reduce_lr_on_plateau"]
+        return keras.callbacks.ReduceLROnPlateau(
+            monitor="val_loss",
+            factor=rlr_params["factor"],
+            patience=rlr_params["patience"],
+            verbose=1,
+            mode="min",
+            min_lr=rlr_params["min_lr"],
+        )
+
+    elif scheduler_type == "cyclic_lr":
+        clr_params = lr_scheduler_params["cyclic_lr"]
+        return CyclicLR(
+            base_lr=clr_params["base_lr"],
+            max_lr=clr_params["max_lr"],
+            step_size=train_size * clr_params["step_size_factor"],
+            mode=clr_params["mode"],
+        )
+
+    elif scheduler_type == "sgdr":
+        sgdr_params = lr_scheduler_params["sgdr"]
+        return SGDRScheduler(
+            min_lr=sgdr_params["min_lr"],
+            max_lr=sgdr_params["max_lr"],
+            steps_per_epoch=train_size,
+            lr_decay=sgdr_params["lr_decay"],
+            cycle_length=sgdr_params["cycle_length"],
+            mult_factor=sgdr_params["mult_factor"],
+        )
+
+    else:
+        logger.warning(
+            f"Unknown scheduler type: {scheduler_type}. Using ReduceLROnPlateau as default."
+        )
+        return keras.callbacks.ReduceLROnPlateau(
+            monitor="val_loss",
+            factor=0.5,
+            patience=5,
+            verbose=1,
+            mode="min",
+            min_lr=1e-6,
+        )
 
 
 def run_training_pipeline(
     etl_params: dict,
     tune_params: dict,
     train_params: dict,
-    model_save_dir: str,
-    model_type: ModelType,
+    shared_params: dict,
+    lr_scheduler_params: dict,
+    debug_code: bool,
+    formatted_command: Optional[str],
 ) -> None:
+    log_filepath = configure_logger(
+        os.path.join(shared_params["output_dir"], "logs"), show_location=debug_code
+    )
+    configure_prefect_logging(show_location=debug_code)
+    version_info = version("capfinder")
+    log_header(f"Using Capfinder v{version_info}")
+    logger.info(formatted_command)
+
     kill_gpu_processes()
-    # set_jax_as_backend()
+    set_data_distributed_training()
+
+    etl_params["dataset_dir"] = os.path.join(shared_params["output_dir"], "dataset")
+    if not os.path.exists(etl_params["dataset_dir"]):
+        os.makedirs(etl_params["dataset_dir"], exist_ok=True)
 
     """
     #################################################
     #############          ETL         ##############
     #################################################
     """
-
-    if etl_params["use_local_dataset"]:
-        x_train, y_train, _, x_test, y_test, _, dataset_info = train_etl(
-            etl_params["data_dir"],
-            etl_params["save_dir"],
-            etl_params["target_length"],
-            etl_params["dtype"],
-            etl_params["n_workers"],
-            etl_params["max_examples"],
-        )
-    else:  # use remote dataset
-        dataset_info = check_and_download_artifact(etl_params)
-
-    train_x_file_path = os.path.join(etl_params["save_dir"], "train_x.csv")
-    train_y_file_path = os.path.join(etl_params["save_dir"], "train_y.csv")
-    test_x_file_path = os.path.join(etl_params["save_dir"], "test_x.csv")
-    test_y_file_path = os.path.join(etl_params["save_dir"], "test_y.csv")
-
-    # Load datasets
-    batch_size = tune_params["batch_size"]
-    train_dataset, test_dataset = load_datasets(
-        train_x_file_path,
-        train_y_file_path,
-        test_x_file_path,
-        test_y_file_path,
-        batch_size,
-        num_timesteps=etl_params["target_length"],
+    # Prepare training datasets using ETL pipeline
+    train_dataset, test_dataset, dataset_version = train_etl(
+        etl_params["caps_data_dir"],
+        etl_params["dataset_dir"],
+        shared_params["target_length"],
+        shared_params["dtype"],
+        etl_params["examples_per_class"],
+        shared_params["train_fraction"],
+        shared_params["num_classes"],
+        shared_params["batch_size"],
+        etl_params["comet_project_name"],
+        etl_params["use_remote_dataset_version"],
     )
 
     logger.info("Dataset loaded successfully!")
     train_feature_shape, train_label_shape = get_shape_with_batch_size(
-        train_dataset, tune_params["batch_size"]
+        train_dataset, shared_params["batch_size"]
     )
     logger.info(f"x_train shape: {train_feature_shape}")
     logger.info(f"y_train shape: {train_label_shape}")
     test_feature_shape, test_label_shape = get_shape_with_batch_size(
-        test_dataset, tune_params["batch_size"]
+        test_dataset, shared_params["batch_size"]
     )
     logger.info(f"x_test shape: {test_feature_shape}")
     logger.info(f"y_test shape: {test_label_shape}")
-    logger.info(f"Dataset version: {dataset_info['version']}")
+    logger.info(f"Dataset version: {dataset_version}")
 
     """
     #################################################
     #############        TUNE          ##############
     #################################################
     """
+    model_type = shared_params["model_type"]
     if model_type not in ["attention_cnn_lstm", "cnn_lstm", "encoder", "resnet"]:
         raise ValueError(
             "Invalid model type. Expected 'attention_cnn_lstm', 'cnn_lstm' or 'encoder' or 'renset'."
@@ -454,41 +586,51 @@ def run_training_pipeline(
     tune_experiment_url = tune_experiment.url
 
     hyper_model = model(
-        input_shape=(etl_params["target_length"], 1), n_classes=etl_params["n_classes"]
+        input_shape=(shared_params["target_length"], 1),
+        n_classes=shared_params["num_classes"],
     )
 
+    model_save_dir = os.path.join(shared_params["output_dir"], "tuner_models")
+    if not os.path.exists(model_save_dir):
+        os.makedirs(model_save_dir, exist_ok=True)
     tuner = initialize_tuner(hyper_model, tune_params, model_save_dir, model_type)
+
+    logger.info("Counting train dataset batches...")
+    total_batches_train = count_batches(train_dataset, "train dataset")
+    logger.info("Counting test dataset batches...")
+    total_batches_test = count_batches(test_dataset, "test dataset")
+    logger.info(
+        f"Count done! Train - Test batches: {total_batches_train} - {total_batches_test}"
+    )
+    trainv_dataset, val_dataset, steps_per_epoch, validation_steps = (
+        make_train_val_datasets(
+            dataset=train_dataset,  # Your original dataset
+            train_fraction=0.8,
+            batch_size=shared_params["batch_size"],
+            buffer_size=10000,  # Adjust as needed
+        )
+    )
+    total_batches_trainv = steps_per_epoch
+    # Apply repeat to the datasets
+    trainv_dataset = trainv_dataset.repeat()
+    val_dataset = val_dataset.repeat()
 
     # tensorboard_save_path = os.path.join(model_save_dir, "tensorboard_logs_encoder", model_type)
     # logger.info(
     #     f"Run tensorboard as following:\ntensorboard --logdir {tensorboard_save_path}"
     # )
-
-    # Split train into train-val sets
-    dataset_size = train_dataset.reduce(0, lambda x, _: x + 1).numpy()
-
-    train_size = int(0.8 * dataset_size)  # 80% for training
-    dataset_copy = train_dataset
-    train_dataset = dataset_copy.take(train_size)
-    val_dataset = dataset_copy.skip(train_size)
-    val_size = dataset_size - train_size
-
-    # Apply repeat to the datasets
-    train_dataset = train_dataset.repeat()
-    val_dataset = val_dataset.repeat()
-
     try:
         tuner.search(
-            train_dataset,
-            steps_per_epoch=train_size,
-            validation_data=val_dataset,
-            validation_steps=val_size,
+            trainv_dataset.map(lambda x, y, z: (x, y)),
+            steps_per_epoch=steps_per_epoch,
+            validation_data=val_dataset.map(lambda x, y, z: (x, y)),
+            validation_steps=validation_steps,
             epochs=tune_params["max_epochs_hpt"],
             callbacks=[
+                # keras.callbacks.TensorBoard(log_dir=tensorboard_save_path),
                 keras.callbacks.EarlyStopping(
                     patience=tune_params["patience"], restore_best_weights=True
                 ),
-                # keras.callbacks.TensorBoard(log_dir=tensorboard_save_path),
                 keras.callbacks.ReduceLROnPlateau(
                     monitor="val_loss",
                     factor=0.5,
@@ -509,13 +651,14 @@ def run_training_pipeline(
         "ETL params": etl_params,
         "Tune params": tune_params,
         "Train params": train_params,
+        "Shared params": shared_params,
         "Data Shapes": {
             "x_train": train_feature_shape,
             "y_train": train_label_shape,
             "x_test": test_feature_shape,
             "y_test": test_label_shape,
         },
-        "Dataset version": dataset_info["version"],
+        "Dataset version": dataset_version,
         "Best Hyperparameters": {
             f"{key}": value for key, value in best_hp.values.items()
         },
@@ -559,32 +702,14 @@ def run_training_pipeline(
         restore_best_weights=True,
     )
 
-    reduce_lr = keras.callbacks.ReduceLROnPlateau(
-        monitor="val_loss", factor=0.5, patience=5, verbose=1, mode="min", min_lr=1e-6
-    )
-
-    # Define the CLR callback
-    # clr = CyclicLR(
-    #     base_lr=1e-3,
-    #     max_lr=5e-2,
-    #     step_size=train_size * 8,  # run 3 cycles in 18 epochs
-    #     mode="triangular2",
-    # )
-
-    # # Create the scheduler
-    # sgdr_scheduler = SGDRScheduler(
-    #     min_lr=5e-3,
-    #     max_lr=1e-2,
-    #     steps_per_epoch=train_size,
-    #     lr_decay=0.9,
-    #     cycle_length=5,
-    #     mult_factor=1.5,
-    # )
-
+    # Select the learning rate scheduler
+    lr_scheduler = select_lr_scheduler(lr_scheduler_params, total_batches_trainv)
     custom_progress = CustomProgressCallback()
     comet_lr_logger = CometLRLogger(train_experiment)
-
-    best_model_path = os.path.join(model_save_dir, "best_model_weights.weights.h5")
+    best_model_dir = os.path.join(shared_params["output_dir"], "best_model")
+    if not os.path.exists(best_model_dir):
+        os.makedirs(best_model_dir, exist_ok=True)
+    best_model_path = os.path.join(best_model_dir, "best_model_weights.weights.h5")
     model_checkpoint = keras.callbacks.ModelCheckpoint(
         best_model_path,
         save_weights_only=True,
@@ -592,25 +717,25 @@ def run_training_pipeline(
         monitor="val_loss",
         mode="min",
     )
+    # Prepare callbacks
+    callbacks = [
+        early_stopping,
+        lr_scheduler,  # Add the selected learning rate scheduler
+        custom_progress,
+        comet_lr_logger,
+        comet_callback,
+        model_checkpoint,
+        interrupt_callback,
+    ]
 
     best_model.fit(
-        train_dataset,
-        steps_per_epoch=train_size,
-        validation_data=val_dataset,
-        validation_steps=val_size,
+        trainv_dataset.map(lambda x, y, z: (x, y)),
+        steps_per_epoch=steps_per_epoch,
+        validation_data=val_dataset.map(lambda x, y, z: (x, y)),
+        validation_steps=validation_steps,
         epochs=train_params["max_epochs_final_model"],
-        batch_size=train_params["batch_size"],
-        callbacks=[
-            early_stopping,
-            reduce_lr,
-            # clr,
-            # sgdr_scheduler,
-            custom_progress,
-            comet_lr_logger,
-            comet_callback,
-            model_checkpoint,
-            interrupt_callback,
-        ],
+        batch_size=shared_params["batch_size"],
+        callbacks=callbacks,
     )
     logger.success("Training on best hyperparameters done!")
     best_model.load_weights(best_model_path)
@@ -621,18 +746,18 @@ def run_training_pipeline(
 
     logger.info("Making predictions on test set for confusion matrix...")
     # Iterate through the test_dataset to collect true labels and predictions
-    total_test_batches = test_dataset.reduce(0, lambda x, _: x + 1).numpy()
+
     pbar = tqdm(
-        test_dataset, total=total_test_batches, desc="Processing test dataset batches"
+        test_dataset, total=total_batches_test, desc="Processing test dataset batches"
     )
-    for batch_num, (features, labels) in enumerate(pbar, start=1):
+    for batch_num, (features, labels, _) in enumerate(pbar, start=1):
         predictions = best_model.predict(
             features, verbose=0
         )  # Assuming `best_model` is your trained model
         y_true_test.extend(labels.numpy())
         y_pred_test.extend(np.argmax(predictions, axis=1))
         # Update the progress bar description
-        pbar.set_description(f"Processing batch {batch_num}/{total_test_batches}")
+        pbar.set_description(f"Processing batch {batch_num}/{total_batches_test}")
         pbar.set_postfix({"Last batch shape": features.shape})
 
     # Convert lists to numpy arrays
@@ -641,11 +766,11 @@ def run_training_pipeline(
     logger.success("Predictions on test set done!")
 
     # Assuming `map_cap_int_to_name` maps integers to class names
-    class_labels = [map_cap_int_to_name(i) for i in range(etl_params["n_classes"])]
+    class_labels = [map_cap_int_to_name(i) for i in range(shared_params["num_classes"])]
 
     # Evaluate the best model on the test data
     logger.info("Evaluate final model performance on test dataset")
-    test_loss, test_acc = best_model.evaluate(test_dataset)
+    test_loss, test_acc = best_model.evaluate(test_dataset.map(lambda x, y, z: (x, y)))
     logger.success("Model evaluation on test set done!")
     logger.info(f"Test loss: {test_loss}, Test accuracy: {test_acc}")
 
@@ -664,14 +789,14 @@ def run_training_pipeline(
         best_model,
         classifier_name,
         ".keras",
-        os.path.join(model_save_dir, "classifier"),
+        os.path.join(best_model_dir, "classifier"),
     )
     if best_encoder_model is not None:
         encoder_save_path = save_model(
             best_encoder_model,
             encoder_name,
             ".keras",
-            os.path.join(model_save_dir, "encoder"),
+            os.path.join(best_model_dir, "encoder"),
         )
 
     if train_experiment:
@@ -685,14 +810,12 @@ def run_training_pipeline(
     # Initialize empty lists for true and predicted labels
     y_true = []
     y_pred = []
-    total_batches = train_size  # Assuming this is the correct number of batches
-
     # Predict using the model on training data
     logger.info("Making predictions on training set for confusion matrix...")
-    train_dataset = train_dataset.take(train_size)  # because it is repeated
+    train_dataset = train_dataset.take(total_batches_train)  # because it is repeated
 
-    pbar = tqdm(train_dataset, total=total_batches, desc="Processing batches")
-    for batch_num, (features, labels) in enumerate(pbar, start=1):
+    pbar = tqdm(train_dataset, total=total_batches_train, desc="Processing batches")
+    for batch_num, (features, labels, _) in enumerate(pbar, start=1):
         predictions = best_model.predict(
             features, verbose=0  # Set to 0 to avoid nested progress bars
         )
@@ -700,7 +823,7 @@ def run_training_pipeline(
         y_pred.extend(np.argmax(predictions, axis=1))
 
         # Update the progress bar description
-        pbar.set_description(f"Processing batch {batch_num}/{total_batches}")
+        pbar.set_description(f"Processing batch {batch_num}/{total_batches_train}")
         pbar.set_postfix({"Last batch shape": features.shape})
 
     # Convert lists to numpy arrays
@@ -708,11 +831,11 @@ def run_training_pipeline(
     y_pred = np.array(y_pred)  # type: ignore
 
     # Assuming `map_cap_int_to_name` maps integers to class names
-    class_labels = [map_cap_int_to_name(i) for i in range(etl_params["n_classes"])]
+    class_labels = [map_cap_int_to_name(i) for i in range(shared_params["num_classes"])]
 
     # Compute confusion matrix
     conf_matrix_train = confusion_matrix(
-        y_true, y_pred, labels=range(etl_params["n_classes"])
+        y_true, y_pred, labels=range(shared_params["num_classes"])
     )
     logger.success("Done making predictions on training set for confusion matrix!")
 
@@ -723,10 +846,10 @@ def run_training_pipeline(
     conf_matrix_str_train = conf_matrix_train_df.to_string()
 
     if train_experiment:
-        train_experiment.log_text(
-            text=dataset_info["etl_experiment_url"],
-            metadata={"Description": "ETL Experiment URL"},
-        )
+        # train_experiment.log_text(
+        #     text=dataset_info["etl_experiment_url"],
+        #     metadata={"Description": "ETL Experiment URL"},
+        # )
         train_experiment.log_text(
             text=tune_experiment_url,
             metadata={"Description": "Tune Experiment URL"},
@@ -755,19 +878,22 @@ def run_training_pipeline(
 
         train_experiment.end()
 
+    grey = "\033[90m"
+    reset = "\033[0m"
+    logger.success("Training finished!")
+    log_output(
+        f"Dataset was saved to the following path:\n {grey}{etl_params['dataset_dir']}{reset}\nModel weights have been saved to the following path:\n {grey}{best_model_path}{reset}\nThe log file has been saved to:\n {grey}{log_filepath}{reset}"
+    )
+    log_header("Processing finished!")
+
 
 if __name__ == "__main__":
     # Configure settings here
     etl_params = {
-        "data_dir": "/export/valenfs/data/processed_data/MinION/9_madcap/4_make_train_dataset_202405/dataset",
-        "save_dir": "/export/valenfs/data/processed_data/MinION/9_madcap/dummy_data/saved_data3/",
-        "target_length": 500,  # length of time series
-        "dtype": "float16",  # data type of the time series
-        "n_workers": 10,  # number of workers for parallel processing (by prefect)
-        "max_examples": None,  # maximum number of examples to use from the dataset (by default None which means all examples)
-        "n_classes": 4,  # number of classes in the dataset
-        "use_local_dataset": False,  # set to False to use the online dataset, otherwise the local dataset will be used and will be uplaoded to comet
-        "remote_dataset_version": "8.0.0",  # version of the online dataset to use
+        "use_remote_dataset_version": "latest",  # version of the online dataset to use
+        "caps_data_dir": "/export/valenfs/data/processed_data/MinION/9_madcap/3_all_train_csv_202405/all_csvs",
+        "examples_per_class": 100,  # maximum number of examples to use from the dataset
+        "comet_project_name": "dataset2",
     }
 
     tune_params = {
@@ -776,29 +902,56 @@ if __name__ == "__main__":
         "max_epochs_hpt": 3,
         "max_trials": 1,  # for random_search, and bayesian_optimization. For hyperband this has no effect
         "factor": 2,
-        "batch_size": 4,
         "seed": 42,
         "tuning_strategy": "bayesian_optimization",  # "hyperband" or "random_search" or "bayesian_optimization"
-        "overwrite": True,
+        "overwrite": False,
     }
 
     train_params = {
         "comet_project_name": "capfinder_tfr_train-delete",
         "patience": 120,
-        "max_epochs_final_model": 100,
-        "batch_size": 4,
+        "max_epochs_final_model": 3,
     }
 
-    model_save_dir = (
-        "/export/valenfs/data/processed_data/MinION/9_madcap/5_trained_models_202405/"
-    )
-    model_type: ModelType = "cnn_lstm"  # attention_cnn_lstm, cnn_lstm, resnet, encoder
+    shared_params = {
+        "num_classes": 4,
+        "model_type": "cnn_lstm",  # attention_cnn_lstm, cnn_lstm, resnet, encoder
+        "batch_size": 10,
+        "target_length": 500,
+        "dtype": "float16",
+        "train_fraction": 0.8,
+        "output_dir": "/export/valenfs/data/processed_data/MinION/9_madcap/9_output_202405_3/",
+    }
 
+    # Learning Rate Scheduler Configuration
+    lr_scheduler_params = {
+        "type": "reduce_lr_on_plateau",  # Choose one: "reduce_lr_on_plateau", "cyclic_lr", or "sgdr"
+        # ReduceLROnPlateau parameters
+        "reduce_lr_on_plateau": {"factor": 0.5, "patience": 5, "min_lr": 1e-6},
+        # Cyclic LR parameters
+        "cyclic_lr": {
+            "base_lr": 1e-3,
+            "max_lr": 5e-2,
+            "step_size_factor": 8,  # step_size will be train_size * step_size_factor
+            "mode": "triangular2",
+        },
+        # SGDR parameters
+        "sgdr": {
+            "min_lr": 1e-3,
+            "max_lr": 2e-3,
+            "lr_decay": 0.9,
+            "cycle_length": 5,
+            "mult_factor": 1.5,
+        },
+    }
+    debug_code = False
     # Run the training pipeline
     run_training_pipeline(
         etl_params=etl_params,
         tune_params=tune_params,
         train_params=train_params,
-        model_save_dir=model_save_dir,
-        model_type=model_type,
+        shared_params=shared_params,
+        lr_scheduler_params=lr_scheduler_params,
+        debug_code=debug_code,
+        formatted_command="",
     )

@@ -1,4 +1,3 @@
-import json
 import os
 import shlex
 import sys
@@ -187,14 +186,11 @@ def extract_cap_signal(
             "-c",
             help="""\n
     Integer-based class label for the RNA cap type. \n
+    - -99 represents an unknown cap(s). \n
     - 0 represents Cap_0 \n
     - 1 represents Cap 1 \n
     - 2 represents Cap 2 \n
     - 3 represents Cap2-1 \n
-    - 4 represents TMG Cap \n
-    - 5 represents NAD Cap \n
-    - 6 represents FAD Cap \n
-    - -99 represents an unknown cap(s). \n
     """,
         ),
     ] = -99,
@@ -297,20 +293,20 @@ def extract_cap_signal(
 
 @app.command()
 def make_train_dataset(
-    csv_dir: Annotated[
+    caps_data_dir: Annotated[
         str,
         typer.Option(
-            "--csv_dir",
+            "--caps_data_dir",
             "-c",
             help="Directory containing all the cap signal data files (data__cap_x.csv)",
         ),
     ] = "",
-    save_dir: Annotated[
+    output_dir: Annotated[
         str,
         typer.Option(
-            "--save_dir",
-            "-s",
-            help="Directory where the processed data will be saved as csv files.",
+            "--output_dir",
+            "-o",
+            help="A dataset directory will be created inside this directory automatically and the dataset will be saved there as CSV files.",
         ),
     ] = "",
     target_length: Annotated[
@@ -326,47 +322,103 @@ def make_train_dataset(
         typer.Option(
             "--dtype",
             "-d",
-            help="Data type to transform the dataset to Valid values are 'float16', 'float32', or 'float64'.",
+            help="Data type to transform the dataset to. Valid values are 'float16', 'float32', or 'float64'.",
         ),
-    ] = "float32",
-    n_workers: Annotated[
+    ] = "float16",
+    examples_per_class: Annotated[
         int,
         typer.Option(
-            "--n_workers", "-n", help="Number of CPUs to use for parallel processing"
+            "--examples_per_class",
+            "-e",
+            help="Number of examples to include per class in the dataset",
         ),
-    ] = 1,
+    ] = 1000,
+    train_fraction: Annotated[
+        float,
+        typer.Option(
+            "--train_fraction",
+            "-f",
+            help="Fraction of data to use for training (0.0 to 1.0)",
+        ),
+    ] = 0.8,
+    num_classes: Annotated[
+        int,
+        typer.Option(
+            "--num_classes",
+            help="Number of classes in the dataset",
+        ),
+    ] = 4,
+    batch_size: Annotated[
+        int,
+        typer.Option(
+            "--batch_size",
+            "-b",
+            help="Batch size for processing data",
+        ),
+    ] = 1024,
+    comet_project_name: Annotated[
+        str,
+        typer.Option(
+            "--comet_project_name",
+            help="Name of the Comet ML project for logging",
+        ),
+    ] = "dataset",
+    use_remote_dataset_version: Annotated[
+        str,
+        typer.Option(
+            "--use_remote_dataset_version",
+            help="Version of the remote dataset to use. If not provided at all, the local dataset will be used/made and/or uploaded",
+        ),
+    ] = "",
 ) -> None:
     """
     Prepares dataset for training the ML model.
 
+    This command processes cap signal data files, applies necessary transformations,
+    and prepares a dataset suitable for training machine learning models. It supports
+    both local data processing and fetching from a remote dataset.
+
     Example command:
     capfinder make-train-dataset \\
-        --csv_dir /path/to/csv_dir \\
-        --save_dir /path/to/save_dir \\
+        --caps_data_dir /path/to/caps_data \\
+        --output_dir /path/to/output \\
         --target_length 500 \\
         --dtype float16 \\
-        --n_workers 10
+        --n_workers 10 \\
+        --examples_per_class 1000 \\
+        --train_fraction 0.8 \\
+        --num_classes 4 \\
+        --batch_size 32 \\
+        --comet_project_name my-capfinder-project \\
+        --use_remote_dataset_version latest
     """
     from typing import cast
 
     from capfinder.train_etl import DtypeLiteral, train_etl
 
-    dt: DtypeLiteral = "float16"
+    dt: DtypeLiteral = "float32"
     if dtype in {"float16", "float32", "float64"}:
-        dt = cast(
-            DtypeLiteral, dtype
-        )  # This is safe because input_str must be one of the Literal values
+        dt = cast(DtypeLiteral, dtype)
     else:
         logger.warning(
-            f"Invalid dtype literal: {dtype}. Allowed values are 'float16', 'float32', 'float64'. Using 'float16' as default."
+            f"Invalid dtype literal: {dtype}. Allowed values are 'float16', 'float32', 'float64'. Using 'float32' as default."
         )
 
+    dataset_dir = os.path.join(output_dir, "dataset")
+    if not os.path.exists(dataset_dir):
+        os.makedirs(dataset_dir)
+
     train_etl(
-        data_dir=csv_dir,
-        save_dir=save_dir,
+        caps_data_dir=caps_data_dir,
+        dataset_dir=dataset_dir,
         target_length=target_length,
         dtype=dt,
-        n_workers=n_workers,
+        examples_per_class=examples_per_class,
+        train_fraction=train_fraction,
+        num_classes=num_classes,
+        batch_size=batch_size,
+        comet_project_name=comet_project_name,
+        use_remote_dataset_version=use_remote_dataset_version,
     )
 
 
@@ -379,39 +431,62 @@ def create_train_config(
         ),
     ] = "",
 ) -> None:
-    """Creats a dummy JSON configuration file at the specified path. Edit it to suit your needs."""
+    """Creates a dummy JSON configuration file at the specified path. Edit it to suit your needs."""
     config = {
         "etl_params": {
-            "data_dir": "/export/valenfs/data/processed_data/MinION/9_madcap/dummy_data/real_data2/",
-            "save_dir": "/export/valenfs/data/processed_data/MinION/9_madcap/dummy_data/saved_data/",
-            "target_length": 500,
-            "dtype": "float16",
-            "n_workers": 10,
-            "max_examples": None,
-            "n_classes": 4,
-            "use_local_dataset": False,
-            "remote_dataset_version": "8.0.0",
+            "use_remote_dataset_version": "latest",  # Version of the remote dataset to use, e.g., "latest", "1.0.0", etc. If set to "", then a local dataset will be used/made and/or uploaded to the remote dataset
+            "caps_data_dir": "/dir/",  # Directory containing cap signal data files for all cap classes in the model
+            "examples_per_class": 100000,  # Maximum number of examples to use per class
+            "comet_project_name": "dataset",  # Name of the Comet ML project for dataset logging
         },
         "tune_params": {
-            "comet_project_name": "capfinder_tfr_tune",
-            "patience": 0,
-            "max_epochs_hpt": 3,
-            "max_trials": 5,
-            "factor": 2,
-            "batch_size": 64,
-            "seed": 42,
-            "tuning_strategy": "hyperband",
-            "overwrite": True,
-        },
+            "comet_project_name": "capfinder_tune",  # Name of the Comet ML project for hyperparameter tuning
+            "patience": 0,  # Number of epochs with no improvement after which training will be stopped
+            "max_epochs_hpt": 3,  # Maximum number of epochs for each trial during hyperparameter tuning
+            "max_trials": 5,  # Maximum number of trials for hyperparameter search
+            "factor": 2,  # Reduction factor for Hyperband algorithm
+            "seed": 42,  # Random seed for reproducibility
+            "tuning_strategy": "hyperband",  # Options: "hyperband", "random_search", "bayesian_optimization"
+            "overwrite": False,  # Whether to overwrite previous tuning results. All hyperparameter tuning results will be lost if set to True
+        },  # Added comma here
         "train_params": {
-            "comet_project_name": "capfinder_tfr_train",
-            "patience": 2,
-            "max_epochs_final_model": 10,
-            "batch_size": 64,
+            "comet_project_name": "capfinder_train",  # Name of the Comet ML project for model training
+            "patience": 120,  # Number of epochs with no improvement after which training will be stopped
+            "max_epochs_final_model": 300,  # Maximum number of epochs for training the final model
         },
-        "model_save_dir": "/export/valenfs/data/processed_data/MinION/9_madcap/models/",
-        "model_type": "cnn_lstm",
+        "shared_params": {
+            "num_classes": 4,  # Number of classes in the dataset
+            "model_type": "cnn_lstm",  # Options: "attention_cnn_lstm", "cnn_lstm", "encoder", "resnet"
+            "batch_size": 32,  # Batch size for training
+            "target_length": 500,  # Target length for input sequences
+            "dtype": "float16",  # Data type for model parameters. Options: "float16", "float32", "float64"
+            "train_fraction": 0.8,  # Fraction of data to use for training (vs. validation)
+            "output_dir": "/dir/",  # Directory to save output files
+        },
+        "lr_scheduler_params": {
+            "type": "reduce_lr_on_plateau",  # Options: "reduce_lr_on_plateau", "cyclic_lr", "sgdr"
+            "reduce_lr_on_plateau": {
+                "factor": 0.5,  # Factor by which the learning rate will be reduced
+                "patience": 5,  # Number of epochs with no improvement after which learning rate will be reduced
+                "min_lr": 1e-6,  # Lower bound on the learning rate
+            },
+            "cyclic_lr": {
+                "base_lr": 1e-3,  # Initial learning rate which is the lower boundary in the cycle
+                "max_lr": 5e-2,  # Upper boundary in the cycle for learning rate
+                "step_size_factor": 8,  # Number of training iterations in the increasing half of a cycle
+                "mode": "triangular2",  # One of {triangular, triangular2, exp_range}
+            },
+            "sgdr": {
+                "min_lr": 1e-3,  # Minimum learning rate
+                "max_lr": 2e-3,  # Maximum learning rate
+                "lr_decay": 0.9,  # Decay factor for learning rate
+                "cycle_length": 5,  # Number of epochs in a cycle
+                "mult_factor": 1.5,  # Multiplication factor for cycle length after each restart
+            },
+        },
+        "debug_code": False,  # Whether to run in debug mode
     }
+    import json
 
     with open(file_path, "w") as file:
         json.dump(config, file, indent=4)
@@ -422,13 +497,15 @@ def train_model(
     config_file: Annotated[
         str,
         typer.Option(
-            "--file_path",
-            "-f",
-            help="""Path to the JSON configuration file containing the parameters for the training pipeline.""",
+            "--config_file",
+            "-c",
+            help="Path to the JSON configuration file containing the parameters for the training pipeline.",
         ),
     ] = "",
 ) -> None:
     """Trains the model using the parameters in the JSON configuration file."""
+    import json
+
     from capfinder.training import run_training_pipeline
 
     # Load the configuration file
@@ -438,16 +515,24 @@ def train_model(
     etl_params = config["etl_params"]
     tune_params = config["tune_params"]
     train_params = config["train_params"]
-    model_save_dir = config["model_save_dir"]
-    model_type = config["model_type"]
+    shared_params = config["shared_params"]
+    lr_scheduler_params = config["lr_scheduler_params"]
+    debug_code = config.get("debug_code", False)
+
+    # Create a formatted command string with all parameters
+    formatted_command = f"capfinder train-model --config_file {config_file}\n\n"
+    formatted_command += "Configuration:\n"
+    formatted_command += json.dumps(config, indent=2)
 
     # Run the training pipeline with the loaded parameters
     run_training_pipeline(
         etl_params=etl_params,
         tune_params=tune_params,
         train_params=train_params,
-        model_save_dir=model_save_dir,
-        model_type=model_type,
+        shared_params=shared_params,
+        lr_scheduler_params=lr_scheduler_params,
+        debug_code=debug_code,
+        formatted_command=formatted_command,
     )
 
 
