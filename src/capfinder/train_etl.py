@@ -759,7 +759,7 @@ def train_etl(
 
         comet_obj.end_experiment()
         logger.info(
-            f"Data processed and resulting dataset {artifact_info["version"]} uploaded to Comet ML successfully."
+            f"Data processed and resulting dataset {artifact_info['version']} uploaded to Comet ML successfully."
         )
         return train_dataset, test_dataset, artifact_info["version"]
 

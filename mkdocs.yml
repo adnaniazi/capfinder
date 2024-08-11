@@ -44,8 +44,6 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.tabbed:
       alternate_style: true
-      slugify: "pymdownx.slugs.slugify"
-      slug_case: lower
   - def_list
   - pymdownx.tasklist:
       custom_checkbox: true
