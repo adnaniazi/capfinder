@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "capfinder"
-version = "0.3.5"
+version = "0.3.6"
 description = "A package for decoding RNA cap types"
 authors = ["Adnan M. Niazi <adnaniazi@gmail.com>"]
 license = "MIT"
