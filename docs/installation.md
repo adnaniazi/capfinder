@@ -39,48 +39,53 @@ In the activated environment, Capfinder can be installed with support for differ
 
     Make sure to choose the installation command that matches your hardware configuration for optimal performance.
 
-!!! failure "What if you get this error"
-In case you encounter the following error:
+### Build Errors and Solutions
+When installing Capfinder, you may encounter build errors, particularly related to the pysam dependency. Below are two common issues and their solutions:
 
-´´´
-ImportError: /tmp/pip-build-env-qsdot3t6/overlay/lib/python3.12/site-packages/Cython/Utils.cp
-note: This error originates from a subprocess, and is likely not a problem with pip.
-ERROR: Failed building wheel for pysam
+=== "Could not build wheels for pysam Errors"
 
-Failed to build pysam
+    If you encounter the following error:
 
-ERROR: Could not build wheels for pysam, which is required to install pyproject.toml-based projects
-´´´
+    ```
+    ImportError: /tmp/pip-build-env-qsdot3t6/overlay/lib/python3.12/site-packages/Cython/Utils.cp
+    note: This error originates from a subprocess, and is likely not a problem with pip.
+    ERROR: Failed building wheel for pysam
 
-You should first do the following in terminal:
+    Failed to build pysam
 
-´´´
-mkdir "/path/to/temp/directory"
-chmod +x "/path/to/temp/directory"
-export TMPDIR="/path/to/temp/directory"
-´´´
+    ERROR: Could not build wheels for pysam, which is required to install pyproject.toml-based projects
+    ```
 
-Now try to reinstall `capfinder`
+    You should first do the following in terminal:
 
-!!! failure "What if you get this error"
-In case you encounter the following error:
+    ```
+    mkdir "/path/to/temp/directory"
+    chmod +x "/path/to/temp/directory"
+    export TMPDIR="/path/to/temp/directory"
+    ```
 
-´´´
-note: use option -std=c99 or -std=gnu99 to compile your code
-error: command '/usr/bin/gcc' failed with exit code 1
-[end of output]
+    Now try to reinstall `capfinder`
 
-note: This error originates from a subprocess, and is likely not a problem with pip.
-ERROR: Failed building wheel for pysam
-Failed to build pysam
-ERROR: Could not build wheels for pysam, which is required to install pyproject.toml-based projects
-´´´
+=== "Compiler flag issues (-std=c99 or -std=gnu99)"
 
-You should first do the following in terminal:
+    If you encounter the following error:
 
-´´´
-export CFLAGS="-std=c99 -D_GNU_SOURCE $CFLAGS"
-export LDFLAGS="-std=c99 $LDFLAGS"
-´´´
+    ```
+    note: use option -std=c99 or -std=gnu99 to compile your code
+    error: command '/usr/bin/gcc' failed with exit code 1
+    [end of output]
 
-Now try to reinstall `capfinder`
+    note: This error originates from a subprocess, and is likely not a problem with pip.
+    ERROR: Failed building wheel for pysam
+    Failed to build pysam
+    ERROR: Could not build wheels for pysam, which is required to install pyproject.toml-based projects
+    ```
+
+    You should first do the following in terminal:
+
+    ```
+    export CFLAGS="-std=c99 -D_GNU_SOURCE $CFLAGS"
+    export LDFLAGS="-std=c99 $LDFLAGS"
+    ```
+
+    Now try to reinstall `capfinder`

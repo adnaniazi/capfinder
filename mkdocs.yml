@@ -22,10 +22,20 @@ nav:
   - Introduction: 'index.md'
   - Installation: 'installation.md'
   - Usage:
+      - mRNA Sample Preparation: 'mRNA_sample_prep.md'
       - Data Preparation: 'preprocessing.md'
       - Cap Prediction: 'prediction.md'
   - Updating Capfinder: 'updating.md'
-  - Developer guide: 'development.md'
+  - Developer Guide:
+      - Setting up developer environment: 'development_setup.md'
+      - Extending Capfinder for a new cap:
+          - Designing cap oligo: 'oligo_design.md'
+          - Sequencing and basecalling: 'sequencing_and_basecalling.md'
+          - Extending cap mapping: 'extend_capmap.md'
+          - Extracting cap signal: 'extract_train_signal.md'
+          - Downloading data for existing caps: 'all_caps_data.md'
+          - Training capfinder: 'training.md'
+  - Using Capfinder's Python API: 'python_api.md'
   - API Documentation: api_docs.md
   - Change Log: changelog.md
 
@@ -47,7 +57,9 @@ markdown_extensions:
   - def_list
   - pymdownx.tasklist:
       custom_checkbox: true
-
+  - pymdownx.caret
+  - pymdownx.mark
+  - pymdownx.tilde
 
 plugins:
   - search:

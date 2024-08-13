@@ -1,8 +1,8 @@
-* Clone this repository
-* Requirements:
-  * [Poetry](https://python-poetry.org/)
-  * Python 3.10 - 3.12
-* Create a virtual environment and install the dependencies
+### Clone this repository
+```sh
+git clone https://github.com/adnaniazi/capfinder.git
+```
+Next, `cd` into the clone repo.
 
 ### Creating dev enviornment
 ```sh
@@ -11,6 +11,14 @@ micromamba activate capfinder_env
 ```
 
 ### Installation
+
+First install `poetry`:
+
+```sh
+pip install poetry
+```
+
+Next install appropriate version of capfinder based on your hardware configuration:
 
 === "CPU"
 

@@ -14,7 +14,8 @@ import multiprocessing
 import os
 import signal
 from dataclasses import dataclass
-from typing import Any, Dict, Union
+from importlib.metadata import version
+from typing import Any, Dict, Optional, Union
 
 import numpy as np
 from loguru import logger
@@ -25,13 +26,14 @@ from capfinder.bam import get_total_records, process_bam_records
 from capfinder.find_ote_test import process_read as extract_roi_coords_test
 from capfinder.find_ote_train import process_read as extract_roi_coords_train
 from capfinder.index import fetch_filepath_using_filename, index
+from capfinder.logger_config import configure_logger, configure_prefect_logging
 from capfinder.plot import plot_roi_signal
 from capfinder.process_pod5 import (
     extract_roi_signal,
     find_base_locs_in_signal,
     pull_read_from_pod5,
 )
-from capfinder.utils import map_cap_int_to_name, open_database
+from capfinder.utils import log_header, log_output, map_cap_int_to_name, open_database
 
 csv.field_size_limit(4096 * 4096)  # Set a higher field size limit (e.g., 1MB)
 
@@ -553,6 +555,46 @@ def collate_bam_pod5(
         data_path, metadata_path = db_handler.merge_data()
         logger.info("Cap signal data extracted successfully!")
     return data_path, metadata_path
+
+
+def collate_bam_pod5_wrapper(
+    bam_filepath: str,
+    pod5_dir: str,
+    num_processes: int,
+    reference: str,
+    cap_class: int,
+    cap0_pos: int,
+    train_or_test: str,
+    plot_signal: bool,
+    output_dir: str,
+    debug_code: bool,
+    formatted_command: Optional[str],
+) -> None:
+    log_filepath = configure_logger(
+        os.path.join(output_dir, "logs"), show_location=debug_code
+    )
+    configure_prefect_logging(show_location=debug_code)
+    version_info = version("capfinder")
+    log_header(f"Using Capfinder v{version_info}")
+    logger.info(formatted_command)
+
+    data_path, metadata_path = collate_bam_pod5(
+        bam_filepath,
+        pod5_dir,
+        num_processes,
+        reference,
+        cap_class,
+        cap0_pos,
+        train_or_test,
+        plot_signal,
+        output_dir,
+    )
+    grey = "\033[90m"
+    reset = "\033[0m"
+    log_output(
+        f"Cap data has been saved to the following path:\n {grey}{data_path}{reset}\nCap metadata have been saved to the following path:\n {grey}{metadata_path}{reset}\nThe log file has been saved to:\n {grey}{log_filepath}{reset}"
+    )
+    log_header("Processing finished!")
 
 
 if __name__ == "__main__":

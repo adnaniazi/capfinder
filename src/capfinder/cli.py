@@ -25,7 +25,7 @@ formatted_command_global = None
 
 
 app = typer.Typer(
-    help=f"""Capfinder v{version_info}: A Python package for decoding RNA cap types using an encoder-based deep learning model.\n
+    help=f"""Capfinder v{version_info}: Advanced RNA Cap Type Prediction Framework.\n
     """,
     add_completion=True,
     rich_markup_mode="rich",
@@ -191,6 +191,7 @@ def extract_cap_signal(
     - 1 represents Cap 1 \n
     - 2 represents Cap 2 \n
     - 3 represents Cap2-1 \n
+    You can use the capmap command to manage cap mappings and use additional interger label for additional caps. \n
     """,
         ),
     ] = -99,
@@ -241,22 +242,18 @@ def extract_cap_signal(
             help="Whether to plot extracted cap signal or not",
         ),
     ] = None,
+    debug_code: Annotated[
+        bool,
+        typer.Option(
+            "--debug/--no-debug",
+            help="Enable debug mode for more detailed logging",
+        ),
+    ] = False,
 ) -> None:
     """
     Extracts signal corresponding to the RNA cap type using BAM and POD5 files. Also, generates plots if required.
 
-    Example command:
-    capfinder extract-cap-signal \\
-        --bam_filepath /path/to/sorted.bam \\
-        --pod5_dir /path/to/pod5_dir \\
-        --reference GCTTTCGTTCGTCTCCGGACTTATCGCACCACCTATCCATCATCAGTACTGT \\
-        --cap_class -99 \\
-        --cap_n1_pos0 52 \\
-        --train_or_test test \\
-        --output_dir /path/to/output_dir \\
-        --n_workers 10 \\
-        --no_plot_signal
-
+    Example command (for training data):
     capfinder extract-cap-signal \\
         --bam_filepath /path/to/sorted.bam \\
         --pod5_dir /path/to/pod5_dir \\
@@ -266,9 +263,23 @@ def extract_cap_signal(
         --train_or_test train \\
         --output_dir /path/to/output_dir \\
         --n_workers 10 \\
-        --no_plot_signal
+        --no-plot-signal \\
+        --no-debug
+
+    Example command (for testing data):
+    capfinder extract-cap-signal \\
+        --bam_filepath /path/to/sorted.bam \\
+        --pod5_dir /path/to/pod5_dir \\
+        --reference GCTTTCGTTCGTCTCCGGACTTATCGCACCACCTATCCATCATCAGTACTGT \\
+        --cap_class -99 \\
+        --cap_n1_pos0 52 \\
+        --train_or_test test \\
+        --output_dir /path/to/output_dir \\
+        --n_workers 10 \\
+        --no-plot-signal \\
+        --no-debug
     """
-    from capfinder.collate import collate_bam_pod5
+    from capfinder.collate import collate_bam_pod5_wrapper
 
     ps = False
     if plot_signal is None:
@@ -278,7 +289,9 @@ def extract_cap_signal(
     else:
         ps = False
 
-    collate_bam_pod5(
+    global formatted_command_global
+
+    collate_bam_pod5_wrapper(
         bam_filepath=bam_filepath,
         pod5_dir=pod5_dir,
         num_processes=n_workers,
@@ -288,6 +301,8 @@ def extract_cap_signal(
         train_or_test=train_or_test,
         plot_signal=ps,
         output_dir=output_dir,
+        debug_code=debug_code,
+        formatted_command=formatted_command_global,
     )
 
 
@@ -372,7 +387,8 @@ def make_train_dataset(
     ] = "",
 ) -> None:
     """
-    Prepares dataset for training the ML model.
+    Prepares dataset for training the ML model. This command can be run independently
+    from here or is automatically invoked by the `train-model` command.
 
     This command processes cap signal data files, applies necessary transformations,
     and prepares a dataset suitable for training machine learning models. It supports
@@ -488,8 +504,25 @@ def create_train_config(
     }
     import json
 
+    from capfinder.logger_config import configure_logger, configure_prefect_logging
+    from capfinder.utils import log_header, log_output
+
+    log_filepath = configure_logger(
+        os.path.join(os.path.dirname(file_path), "logs"), show_location=False
+    )
+    configure_prefect_logging(show_location=False)
+    version_info = version("capfinder")
+    log_header(f"Using Capfinder v{version_info}")
+
     with open(file_path, "w") as file:
         json.dump(config, file, indent=4)
+
+    grey = "\033[90m"
+    reset = "\033[0m"
+    log_output(
+        f"The training config JSON file has been saved to:\n {grey}{file_path}{reset}\nThe log file has been saved to:\n {grey}{log_filepath}{reset}"
+    )
+    log_header("Processing finished!")
 
 
 @app.command()
@@ -688,7 +721,7 @@ def predict_cap_types(
         batch_size=batch_size,
         debug_code=debug_code,
         refresh_cache=refresh_cache,
-        formatted_command=formatted_command_global,  # Pass the formatted command here
+        formatted_command=formatted_command_global,
     )
     logger.success("Finished predicting cap types!")
 
