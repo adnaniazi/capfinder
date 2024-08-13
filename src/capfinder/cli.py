@@ -648,6 +648,14 @@ def predict_cap_types(
             ),
         ),
     ] = 128,
+    custom_model_path: Annotated[
+        Optional[str],
+        typer.Option(
+            "--custom-model-path",
+            "-m",
+            help="Path to a custom model (.keras) file. If not provided, the default pre-packaged model will be used.",
+        ),
+    ] = None,
     plot_signal: Annotated[
         bool,
         typer.Option(
@@ -719,6 +727,7 @@ def predict_cap_types(
         cap_class=-99,
         target_length=500,
         batch_size=batch_size,
+        custom_model_path=custom_model_path,
         debug_code=debug_code,
         refresh_cache=refresh_cache,
         formatted_command=formatted_command_global,

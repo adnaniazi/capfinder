@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Fixed missing headers from some commands in the cli
 
 ### Added
+- Added option to specify custom models during inference
 - Added more documentation
 
 ## [0.3.5] - 2024-08-11

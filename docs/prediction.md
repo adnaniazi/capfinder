@@ -29,11 +29,13 @@ This command predicts RNA cap types using BAM and POD5 files.
 
 :   Without a GPU, use `float32` or `float64` for better performance. If you have a GPU, then use `float16` for faster inference
 
-- `--batch_size` or `-bs`: Batch size for model inference. Default is 128
+- `--batch_size` or `-bs`: Batch size for model inference. Default is `128`
 
 :   Larger batch sizes can speed up inference but require more memory. If the code crashes during step 4/5, you have probably set too high a batch size.
 
-- `--plot-signal` / `--no-plot-signal`: Whether to plot extracted cap signal or not. Default is --no-plot-signal
+- `--plot-signal` / `--no-plot-signal`: Whether to plot extracted cap signal or not. Default is `--no-plot-signal`
+
+- `--custom-model-path` or `-m`: Path to a custom model (.keras) file. If not provided, the default pre-packaged model will be used.
 
 :   Saving plots can help you plot the read's signal, and plot the signal for cap and flanking bases(&#177;5).
 
@@ -41,11 +43,9 @@ This command predicts RNA cap types using BAM and POD5 files.
 
 :   The option can prints which function is creating a particular log output. This is helpful during code debugging.
 
-- `--refresh-cache` / `--no-refresh-cache`: Refresh the cache for intermediate results. Default is --no-refresh-cache
+- `--refresh-cache` / `--no-refresh-cache`: Refresh the cache for intermediate results. Default is `--no-refresh-cache`
 
-:   If you input data has changed (for example you added one more POD5 file in your POD5 directory) then you must use -
-
-- `--refresh-cache` to compute all steps again and not load them from cache that hold results from your previous run.
+:   If you input data has changed (for example you added one more POD5 file in your POD5 directory) then you must use `--refresh-cache` to compute all steps again and not load them from cache that hold results from your previous run.
 
 - `--help`: Show the help message and exit
 

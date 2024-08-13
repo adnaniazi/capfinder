@@ -80,22 +80,29 @@ def reconfigure_logging_task(output_dir: str, debug_code: bool) -> None:
     configure_prefect_logging(show_location=debug_code)
 
 
-def get_model(model_name: str, load_optimizer: bool = False) -> keras.Model:
+def get_model(
+    model_path: Optional[str] = None, load_optimizer: bool = False
+) -> keras.Model:
     """
-    Load and return a model from the given model name.
+    Load and return a model from the given model path or use the default model.
 
     Args:
-        model_name (str): Name of the model file.
+        model_path (Optional[str]): Path to the custom model file. If None, use the default model.
         load_optimizer (bool): Whether to load the optimizer with the model.
 
     Returns:
         keras.Model: The loaded Keras model.
     """
-    model_file = resources.files(model_module).joinpath(model_name)
-    with resources.as_file(model_file) as model_path:
+    if model_path is None:
+        model_file = resources.files(model_module).joinpath("cnn_lstm-classifier.keras")
+        with resources.as_file(model_file) as default_model_path:
+            model = keras.models.load_model(default_model_path, compile=False)
+    else:
         model = keras.models.load_model(model_path, compile=False)
 
-    logger.info("Model loaded successfully in memory.")
+    logger.info(
+        f"Model loaded successfully from {'default path' if model_path is None else model_path}"
+    )
     return model
 
 
@@ -108,18 +115,19 @@ def batched_inference(
 ) -> str:
     """
     Perform batched inference on a dataset using a given model and save predictions to a CSV file.
+
     Args:
         dataset (tf.data.Dataset): The input dataset to perform inference on.
-        model (Model): The Keras model to use for making predictions.
+        model (keras.Model): The Keras model to use for making predictions.
         output_dir (str): The directory where the output CSV file will be saved.
         csv_file_path (str): Path to the original CSV file used to create the dataset.
+
     Returns:
         str: The path to the output CSV file containing the predictions.
     """
     os.makedirs(output_dir, exist_ok=True)
     output_csv_path = os.path.join(output_dir, "predictions.csv")
 
-    # Count the total number of samples
     total_reads = count_csv_rows(csv_file_path)
     logger.info(f"Total reads to perform cap predictions on: {total_reads}")
 
@@ -136,13 +144,11 @@ def batched_inference(
                 preds = model.predict(x, verbose=0)
                 batch_pred_classes = tf.argmax(preds, axis=1).numpy()
 
-                # Prepare a list of rows to write
                 rows_to_write = [
                     [rid.decode("utf-8"), map_cap_int_to_name(pred_class)]
                     for rid, pred_class in zip(read_id.numpy(), batch_pred_classes)
                 ]
 
-                # Write the entire batch at once
                 csvwriter.writerows(rows_to_write)
 
                 batch_size = len(read_id)
@@ -150,7 +156,7 @@ def batched_inference(
                 pbar.update(batch_size)
 
                 if processed_reads >= total_reads:
-                    break  # Exit the loop if we've processed all expected samples
+                    break
         except tf.errors.OutOfRangeError:
             logger.warning(
                 "Dataset iterator exhausted before processing all expected reads."
@@ -247,6 +253,7 @@ def prepare_inference_data(
     cap_class: int = -99,
     target_length: int = 500,
     batch_size: int = 32,
+    custom_model_path: Optional[str] = None,
     debug_code: bool = False,
     refresh_cache: bool = False,
 ) -> tuple[str, str]:
@@ -266,6 +273,7 @@ def prepare_inference_data(
         cap_class (int): CAP class identifier.
         target_length (int): Length of the target sequence.
         batch_size (int): Size of the data batches.
+        custom_model_path (Optional[str]): Path to a custom model file. If None, use the default model.
         debug_code (bool): Flag to enable debugging information in logs.
         refresh_cache (bool): Flag to refresh cached data.
 
@@ -293,8 +301,10 @@ def prepare_inference_data(
     log_step(2, 5, "Creating TensorFlow dataset")
     dataset = create_dataset(data_path, target_length, batch_size, dtype)
 
-    log_step(3, 5, "Loading the pre-trained model")
-    model = get_model("cnn_lstm-classifier.keras")
+    log_step(
+        3, 5, f"Loading the {'custom' if custom_model_path else 'pre-trained'} model"
+    )
+    model = get_model(custom_model_path)
 
     log_step(4, 5, "Performing batch inference for cap type prediction")
     predictions_csv_path = batched_inference.with_options(refresh_cache=refresh_cache)(
@@ -333,6 +343,7 @@ def predict_cap_types(
     cap_class: int = -99,
     target_length: int = 500,
     batch_size: int = 32,
+    custom_model_path: Optional[str] = None,
     debug_code: bool = False,
     refresh_cache: bool = False,
     formatted_command: Optional[str] = None,
@@ -353,6 +364,7 @@ def predict_cap_types(
         cap_class (int): CAP class identifier.
         target_length (int): Length of the target sequence.
         batch_size (int): Size of the data batches.
+        custom_model_path (Optional[str]): Path to a custom model file. If None, use the default model.
         debug_code (bool): Flag to enable debugging information in logs.
         refresh_cache (bool): Flag to refresh cached data.
         formatted_command (Optional[str]): The formatted command string to be logged.
@@ -377,6 +389,7 @@ def predict_cap_types(
         cap_class,
         target_length,
         batch_size,
+        custom_model_path,
         debug_code,
         refresh_cache,
     )
@@ -392,7 +405,7 @@ if __name__ == "__main__":
     bam_filepath = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/8_20231114_randomCAP1v3_rna004/1_basecall_subset/sorted.calls.bam"
     pod5_dir = "/export/valenfs/data/raw_data/minion/2024_cap_ligation_data_v3_oligo/20240521_cap1/20231114_randomCAP1v3_rna004/"
     num_cpus = 3
-    output_dir = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/8_20231114_randomCAP1v3_rna004/test_OTE_vizs_july53"
+    output_dir = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/8_20231114_randomCAP1v3_rna004/test_OTE_vizs_july55"
     dtype: DtypeLiteral = "float16"
     reference = "GCTTTCGTTCGTCTCCGGACTTATCGCACCACCTATCCATCATCAGTACTGT"
     cap0_pos = 52
@@ -404,6 +417,7 @@ if __name__ == "__main__":
     debug_code = False
     refresh_cache = True
     formatted_command = ""
+    custom_model_path = None  # Set this to a path if you want to use a custom model
 
     predict_cap_types(
         bam_filepath,
@@ -418,6 +432,7 @@ if __name__ == "__main__":
         cap_class,
         target_length,
         batch_size,
+        custom_model_path,
         debug_code,
         refresh_cache,
         formatted_command,
