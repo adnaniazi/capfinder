@@ -20,7 +20,7 @@ capfinder extract-cap-signal \
     --train_or_test train \
     --output_dir /path/to/output_dir \
     --n_workers 10 \
-    --no_plot_signal \
+    --no-plot-signal \
     --no-debug
 ```
 
