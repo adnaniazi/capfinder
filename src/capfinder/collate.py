@@ -12,17 +12,19 @@ import csv
 import datetime
 import multiprocessing
 import os
-import signal
+import pickle
 from dataclasses import dataclass
 from importlib.metadata import version
-from typing import Any, Dict, Optional, Union
+from itertools import repeat
+from typing import Any, Dict, Generator, Optional, Tuple, Union
 
 import numpy as np
+import pysam
 from loguru import logger
 from mpire import WorkerPool
 
 from capfinder.align import align
-from capfinder.bam import get_total_records, process_bam_records
+from capfinder.bam import get_signal_info, get_total_records
 from capfinder.find_ote_test import process_read as extract_roi_coords_test
 from capfinder.find_ote_train import process_read as extract_roi_coords_train
 from capfinder.index import fetch_filepath_using_filename, index
@@ -46,6 +48,21 @@ shared_dict["good_reads_count"] = 0
 shared_dict["bad_reads_count"] = 0
 shared_dict["good_reads_dir"] = 0
 shared_dict["bad_reads_dir"] = 0
+
+
+def generate_pickled_bam_records(bam_filepath: str) -> Generator[bytes, None, None]:
+    """
+    Generate pickled BAM records from a BAM file.
+
+    Args:
+        bam_filepath (str): Path to the BAM file.
+
+    Yields:
+        bytes: Pickled BAM record.
+    """
+    with pysam.AlignmentFile(bam_filepath, "rb") as bam_file:
+        for record in bam_file:
+            yield pickle.dumps(get_signal_info(record))
 
 
 @dataclass
@@ -141,7 +158,7 @@ class DatabaseHandler:
         worker_state["metadata_writer"] = metadata_writer
 
     def exit_func(self, worker_id: int, worker_state: Dict[str, Any]) -> None:
-        """Closes the database connection and the CSV file."""
+        """Closes the database connection and the CSV files."""
         conn = worker_state.get("db_connection")
         if conn:
             conn.close()
@@ -157,7 +174,7 @@ class DatabaseHandler:
         # Close the metadata file
         worker_state["metadata_file"].close()
 
-    def merge_data(self) -> tuple[str, str]:
+    def merge_data(self) -> Tuple[str, str]:
         """Merges the data and metadata CSV files."""
         data_path = self._merge_csv_files(data_or_metadata="data")
         metadata_path = self._merge_csv_files(data_or_metadata="metadata")
@@ -206,7 +223,7 @@ class DatabaseHandler:
 def collate_bam_pod5_worker(
     worker_id: int,
     worker_state: Dict[str, Any],
-    bam_data: Dict[str, Any],
+    pickled_bam_data: bytes,
     reference: str,
     cap_class: int,
     cap0_pos: int,
@@ -222,8 +239,8 @@ def collate_bam_pod5_worker(
             Worker ID.
         worker_state: dict
             Dictionary containing the database connection and cursor.
-        bam_data: dict
-            Dictionary containing the BAM record information.
+        pickled_bam_data: bytes
+            Pickled dictionary containing the BAM record information.
         reference: str
             Reference sequence.
         cap_class: int
@@ -238,11 +255,10 @@ def collate_bam_pod5_worker(
             Path to the output directory.
 
     Returns:
-        roi_data: dict
-            Dictionary containing the ROI signal and fasta sequence.
-
+        None
     """
     # 1. Get read info from bam record
+    bam_data = pickle.loads(pickled_bam_data)
     read_id = bam_data["read_id"]
     pod5_filename = bam_data["pod5_filename"]
     parent_read_id = bam_data["parent_read_id"]
@@ -373,7 +389,7 @@ def collate_bam_pod5_worker(
             # Get the current timestamp
             # We append the timestamp to the name of the plot file
             # so that we can handle multiple plots for the same read
-            # due to multiple alginments (secondary/supp.) in SAM files
+            # due to multiple alignments (secondary/supp.) in SAM files
             timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
             plot_filepath = os.path.join(
                 output_dir,
@@ -413,139 +429,78 @@ def collate_bam_pod5(
     train_or_test: str,
     plot_signal: bool,
     output_dir: str,
-) -> tuple[str, str]:
+) -> Tuple[str, str]:
     """
     Collates information from the BAM file and the POD5 files,
     aligns OTE to extracts the signal for the
     region of interest (ROI) for training or testing purposes.
     It also plots the ROI signal if requested.
 
-    Params:
-    -------
-    bam_filepath : str
-        Path to the BAM file.
-    pod5_dir : str
-        Path to the directory containing the POD5 files.
-    num_processes : int
-        Number of processes to use for parallel processing.
-    reference : str
-        Reference sequence.
-    cap_class : int
-        Class label for the RNA cap.
-
-        Valid options for `cap_class` and their corresponding meanings are:
-
-        * 0: "cap_0" - Represents the absence of a specific modification at the 5' end.
-        * 1: "cap_1" (default) - The most common cap structure, typically containing a 7-methylguanosine (m7G) modification.
-        * 2: "cap_2" - Less common cap structure, often containing a 2'-O-methyl modification.
-        * 3: "cap_2-1" - Combination of cap_2 and cap_1 modifications.
-        * 4: "cap_TMG" - Cap structure with trimethylguanosine (TMG) modification.
-        * 5: "cap_NAD" - Cap structure with nicotinamide adenine dinucleotide (NAD) modification.
-        * 6: "cap_FAD" - Cap structure with flavin adenine dinucleotide (FAD) modification.
-        * -99: "cap_unknown" - Indicates an unknown or undetermined cap structure.
-
-    cap0_pos : int
-        Position of the cap N1 base in the reference sequence (0-based).
-
-    train_or_test : str
-        Whether to extract ROI for training or testing.
-        Valid options are'train' or 'test'.
-
-    plot_signal : bool
-        Whether to plot the ROI signal.
-
-    output_dir : str
-        Path to the output directory.
-
-        Will Contain:
-        * A CSV file (data__cap_x.csv) containing the extracted ROI signal data.
-        * A CSV file (metadata__cap_x.csv) containing the complete metadata information.
-        * A log file (capfinder_vXYZ_datatime.log) containing the logs of the program.
-        * A directory (plots) containing the plots of the ROI signal if plot_signal is set to True.
-            * good_reads: Directory that contains the plots for the good reads.
-            * bad_reads: Directory that contains the plots for the bad reads.
-            * plotpaths.csv: CSV file containing the paths to the plots based on the read ID.
+    Args:
+        bam_filepath (str): Path to the BAM file.
+        pod5_dir (str): Path to the directory containing the POD5 files.
+        num_processes (int): Number of processes to use for parallel processing.
+        reference (str): Reference sequence.
+        cap_class (int): Class label for the RNA cap.
+        cap0_pos (int): Position of the cap N1 base in the reference sequence (0-based).
+        train_or_test (str): Whether to extract ROI for training or testing.
+        plot_signal (bool): Whether to plot the ROI signal.
+        output_dir (str): Path to the output directory.
 
     Returns:
-    --------
-    tuple[str, str]: Paths to the data and metadata CSV files.
-
+        Tuple[str, str]: Paths to the data and metadata CSV files.
     """
     os.makedirs(output_dir, exist_ok=True)
-
-    # 1. Initial configuration
-    # configure_logger(output_dir)
-    # configure_prefect_logging()
 
     logger.info("Computing BAM total records...")
     num_bam_records = get_total_records(bam_filepath)
     logger.info(f"Found {num_bam_records} BAM records!")
 
-    # 2. Make index database
+    # Make index database
     database_path = os.path.join(output_dir, "database.db")
     index(pod5_dir, output_dir)
 
-    # 3. If plots are requested, create the CSV file and the directories
-    plots_csv_filepath = None  # Initialize the variable here
-
+    # If plots are requested, create the CSV file and the directories
+    plots_csv_filepath = None
     if plot_signal:
         good_reads_plots_dir = os.path.join(output_dir, "plots", "good_reads", "0")
         bad_reads_plots_dir = os.path.join(output_dir, "plots", "bad_reads", "0")
-        # create the directories if they do not exist
         os.makedirs(good_reads_plots_dir, exist_ok=True)
         os.makedirs(bad_reads_plots_dir, exist_ok=True)
-        # Define the path to the CSV file within the "plots" directory
         plots_csv_filepath = os.path.join(output_dir, "plots", "plotpaths.csv")
 
-    # 4. Initialize the database handler
+    # Initialize the database handler
     db_handler = DatabaseHandler(
         cap_class, num_processes, database_path, plots_csv_filepath, output_dir
     )
 
-    # 5. Set the signal handler for SIGINT
-    # This is useful when the use presses Ctrl+C to stop the program.
-    # The program saves the CSV file and exits.
-    def signal_handler(signum: signal.Signals, frame: Any) -> None:
-        print("KeyboardInterrupt detected. Closing the CSV file.")
-        if db_handler.plots_csv_filepath:
-            csvfile = db_handler.csvfile
-            if csvfile:
-                csvfile.close()
-        exit(1)  # Exit the program
-
-    # signal.signal(signal.SIGINT, signal_handler)  # type: ignore
-
-    # 6. Process the BAM file row-by-row using multiple processes
     try:
         logger.info("Processing BAM file using multiple processes...")
         with WorkerPool(
             n_jobs=num_processes, use_worker_state=True, pass_worker_id=True
         ) as pool:
-            pool.map(
-                collate_bam_pod5_worker,
-                [
-                    (
-                        bam_data,
-                        reference,
-                        cap_class,
-                        cap0_pos,
-                        train_or_test,
-                        plot_signal,
-                        output_dir,
-                    )
-                    for bam_data in process_bam_records(bam_filepath)
-                ],
-                iterable_len=num_bam_records,
-                worker_init=db_handler.init_func,  # Passing method of db_handler object
-                worker_exit=db_handler.exit_func,  # Passing method of db_handler object
-                progress_bar=True,
+            iterator = zip(
+                generate_pickled_bam_records(bam_filepath),
+                repeat(reference),
+                repeat(cap_class),
+                repeat(cap0_pos),
+                repeat(train_or_test),
+                repeat(plot_signal),
+                repeat(output_dir),
             )
+            for _ in pool.imap_unordered(
+                collate_bam_pod5_worker,
+                iterator,
+                worker_init=db_handler.init_func,
+                worker_exit=db_handler.exit_func,
+                progress_bar=True,
+                iterable_len=num_bam_records,
+            ):
+                pass  # We don't need to do anything with the results
 
     except Exception as e:
-        # Handle the exception (e.g., log the error)
         logger.error(f"An error occurred: {e}")
     finally:
-        # Close the CSV file when an error occurs to save the progress so far
         if plots_csv_filepath:
             csvfile = db_handler.csvfile
             if csvfile:
@@ -570,6 +525,22 @@ def collate_bam_pod5_wrapper(
     debug_code: bool,
     formatted_command: Optional[str],
 ) -> None:
+    """
+    Wrapper function for collate_bam_pod5 that sets up logging and handles output.
+
+    Args:
+        bam_filepath (str): Path to the BAM file.
+        pod5_dir (str): Path to the directory containing the POD5 files.
+        num_processes (int): Number of processes to use for parallel processing.
+        reference (str): Reference sequence.
+        cap_class (int): Class label for the RNA cap.
+        cap0_pos (int): Position of the cap N1 base in the reference sequence (0-based).
+        train_or_test (str): Whether to extract ROI for training or testing.
+        plot_signal (bool): Whether to plot the ROI signal.
+        output_dir (str): Path to the output directory.
+        debug_code (bool): Whether to show debug information in logs.
+        formatted_command (Optional[str]): Formatted command string for logging.
+    """
     log_filepath = configure_logger(
         os.path.join(output_dir, "logs"), show_location=debug_code
     )
@@ -598,6 +569,7 @@ def collate_bam_pod5_wrapper(
 
 
 if __name__ == "__main__":
+    # Example usage
     bam_filepath = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/8_20231114_randomCAP1v3_rna004/1_basecall_subset/sorted.calls.bam"
     pod5_dir = "/export/valenfs/data/raw_data/minion/2024_cap_ligation_data_v3_oligo/20240521_cap1/20231114_randomCAP1v3_rna004/"
     num_processes = 3
@@ -607,7 +579,10 @@ if __name__ == "__main__":
     output_dir = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/8_20231114_randomCAP1v3_rna004/test_OTE_vizs_jun5"
     plot_signal = True
     cap_class = 1
-    collate_bam_pod5(
+    debug_code = False
+    formatted_command = " "
+
+    collate_bam_pod5_wrapper(
         bam_filepath,
         pod5_dir,
         num_processes,
@@ -617,26 +592,6 @@ if __name__ == "__main__":
         train_or_test,
         plot_signal,
         output_dir,
+        debug_code,
+        formatted_command,
     )
-
-    # bam_filepath = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data_old/7_20231025_capjump_rna004/2_alignment/1_basecalled/sorted.calls.bam"
-    # # bam_filepath = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/7_20231025_capjump_rna004/1_basecall_subset/sorted.calls.bam"
-    # pod5_dir = "/export/valenfs/data/raw_data/minion/7_20231025_capjump_rna004/20231025_CapJmpCcGFP_RNA004/20231025_1536_MN29576_FAX71885_5b8c42a6"
-    # num_processes = 120
-    # reference = "TTCGTCTCCGGACTTATCGCACCACCTAT"
-    # cap0_pos = 43  # 59
-    # train_or_test = "test"
-    # output_dir = "/export/valenfs/data/processed_data/MinION/9_madcap/1_data/7_20231025_capjump_rna004/output_full12"
-    # plot_signal = True
-    # cap_class = 1
-    # collate_bam_pod5(
-    #     bam_filepath,
-    #     pod5_dir,
-    #     num_processes,
-    #     reference,
-    #     cap_class,
-    #     cap0_pos,
-    #     train_or_test,
-    #     plot_signal,
-    #     output_dir,
-    # )
