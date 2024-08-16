@@ -400,7 +400,6 @@ def make_train_dataset(
         --output_dir /path/to/output \\
         --target_length 500 \\
         --dtype float16 \\
-        --n_workers 10 \\
         --examples_per_class 1000 \\
         --train_fraction 0.8 \\
         --num_classes 4 \\
@@ -410,7 +409,22 @@ def make_train_dataset(
     """
     from typing import cast
 
+    from capfinder.logger_config import configure_logger, configure_prefect_logging
     from capfinder.train_etl import DtypeLiteral, train_etl
+    from capfinder.utils import log_header, log_output
+
+    global formatted_command_global
+
+    dataset_dir = os.path.join(output_dir, "dataset")
+    if not os.path.exists(dataset_dir):
+        os.makedirs(dataset_dir)
+    log_filepath = configure_logger(
+        os.path.join(dataset_dir, "logs"), show_location=False
+    )
+    configure_prefect_logging(show_location=False)
+    version_info = version("capfinder")
+    log_header(f"Using Capfinder v{version_info}")
+    logger.info(formatted_command_global)
 
     dt: DtypeLiteral = "float32"
     if dtype in {"float16", "float32", "float64"}:
@@ -419,10 +433,6 @@ def make_train_dataset(
         logger.warning(
             f"Invalid dtype literal: {dtype}. Allowed values are 'float16', 'float32', 'float64'. Using 'float32' as default."
         )
-
-    dataset_dir = os.path.join(output_dir, "dataset")
-    if not os.path.exists(dataset_dir):
-        os.makedirs(dataset_dir)
 
     train_etl(
         caps_data_dir=caps_data_dir,
@@ -436,6 +446,11 @@ def make_train_dataset(
         comet_project_name=comet_project_name,
         use_remote_dataset_version=use_remote_dataset_version,
     )
+
+    grey = "\033[90m"
+    reset = "\033[0m"
+    log_output(f"The log file has been saved to:\n {grey}{log_filepath}{reset}")
+    log_header("Processing finished!")
 
 
 @app.command()

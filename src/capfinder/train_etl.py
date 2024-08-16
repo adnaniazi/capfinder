@@ -13,6 +13,8 @@ from capfinder.inference_data_loader import DtypeLiteral, get_dtype
 from capfinder.ml_libs import tf
 from capfinder.utils import map_cap_int_to_name
 
+csv.field_size_limit(4096 * 4096)  # Set a higher field size limit (e.g., 1MB)
+
 
 def read_dataset_version_info(dataset_dir: str) -> Optional[str]:
     version_file = os.path.join(dataset_dir, "artifact_version.txt")
@@ -47,7 +49,7 @@ class CometArtifactManager:
         """
         self.project_name = project_name
         self.dataset_dir = dataset_dir
-        self.artifact_name = "cap_data2"
+        self.artifact_name = "cap_data"
         self.experiment = self.initialize_comet_ml_experiment()
         self.artifact = self.create_artifact()
         self.info: Dict[str, Optional[str]] = {
@@ -690,7 +692,9 @@ def train_etl(
             logger.info(f"Local dataset v{current_local_version} loaded successfully.")
             return train_dataset, test_dataset, current_local_version
 
-    if reprocess_dataset:
+    if reprocess_dataset or (
+        not current_local_version and use_remote_dataset_version == ""
+    ):
         class_files = group_files_by_class(caps_data_dir)
         train_datasets = []
         test_datasets = []
