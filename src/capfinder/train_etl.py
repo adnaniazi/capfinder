@@ -482,7 +482,7 @@ def create_class_dataset(
     train_fraction: float,
 ) -> tf.data.Dataset:
     """Create a dataset for a single class from multiple files."""
-    class_dataset = None
+    class_dataset: tf.data.Dataset = None  # Explicit type annotation
 
     for file_path in file_paths:
         dataset = create_dataset(file_path, target_length, dtype)
@@ -491,12 +491,13 @@ def create_class_dataset(
             class_dataset = dataset
         else:
             class_dataset = class_dataset.concatenate(dataset)
-    dataset = dataset.shuffle(buffer_size=10000).take(examples_per_class)
+    # Shuffle and take examples after concatenating all files
+    class_dataset = class_dataset.shuffle(buffer_size=10000).take(examples_per_class)
 
     # Split into train and test
     train_size = int(train_fraction * examples_per_class)
-    train_dataset = dataset.take(train_size)
-    test_dataset = dataset.skip(train_size)
+    train_dataset = class_dataset.take(train_size)
+    test_dataset = class_dataset.skip(train_size)
     return train_dataset, test_dataset
 
 
