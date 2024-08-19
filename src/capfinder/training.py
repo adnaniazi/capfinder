@@ -9,6 +9,9 @@ from typing import Dict, Literal, Optional, Tuple, Type, Union
 import numpy as np
 import pandas as pd
 from comet_ml import Experiment  # Import CometML before keras
+
+os.environ["COMET_LOGGING_FILE"] = "/dev/null"
+
 from loguru import logger
 from sklearn.metrics import confusion_matrix
 from tqdm import tqdm
@@ -40,6 +43,7 @@ from capfinder.utils import (
     initialize_comet_ml_experiment,
     log_header,
     log_output,
+    log_subheader,
     map_cap_int_to_name,
 )
 
@@ -123,9 +127,8 @@ class InterruptCallback(keras.callbacks.Callback):
         """
         global stop_training
         if stop_training:
-            logger.info(
-                "Training interrupted by user at the end of epoch %d.", epoch + 1
-            )
+            te = epoch + 1
+            logger.info(f"Training interrupted by user at the end of epoch {te}")
             self.model.stop_training = True
 
 
@@ -185,6 +188,7 @@ def save_model(
 
     # Save the model to the specified path
     model.save(model_save_path)
+    logger.info(f"Best model saved to:{model_save_path}")
 
     # Return the save path
     return model_save_path
@@ -212,8 +216,9 @@ def set_data_distributed_training() -> None:
         logger.info(f"Device available: {device}, Type: {device.platform}")
 
     if len(cuda_devices) > 1:
+        keras.mixed_precision.set_global_policy("mixed_float16")
         logger.info(
-            f"Multiple CUDA devices detected ({len(cuda_devices)}). Setting up distributed training."
+            f"({len(cuda_devices)}) CUDA devices detected. Setting up data distributed training."
         )
 
         # Define a 1D device mesh for data parallelism using only CUDA devices
@@ -229,14 +234,13 @@ def set_data_distributed_training() -> None:
 
         logger.info("Distributed training setup complete.")
     elif len(cuda_devices) == 1:
+        keras.mixed_precision.set_global_policy("mixed_float16")
         logger.info(
             "Single CUDA device detected. Using standard (non-distributed) training."
         )
     else:
         logger.info("No CUDA devices detected. Training will proceed on CPU.")
-
-    # Log the final training configuration
-    logger.info(f"Training will use {len(cuda_devices)} CUDA device(s).")
+        keras.mixed_precision.set_global_policy("float32")
 
 
 def initialize_tuner(
@@ -273,6 +277,7 @@ def initialize_tuner(
         )
 
     if tuning_strategy == "hyperband":
+        logger.info("Using Hyperband tuning strategy...")
         tuner = Hyperband(
             hypermodel=hyper_model.build,
             objective=Objective("val_sparse_categorical_accuracy", direction="max"),
@@ -284,6 +289,7 @@ def initialize_tuner(
             project_name=tune_params["comet_project_name"],
         )
     elif tuning_strategy == "bayesian_optimization":
+        logger.info("Using Bayesian Optimization tuning strategy...")
         tuner = BayesianOptimization(
             hypermodel=hyper_model.build,
             objective=Objective("val_sparse_categorical_accuracy", direction="max"),
@@ -294,6 +300,7 @@ def initialize_tuner(
             project_name=tune_params["comet_project_name"],
         )
     elif tuning_strategy == "random_search":
+        logger.info("Using Random Search tuning strategy...")
         tuner = RandomSearch(
             hypermodel=hyper_model.build,
             objective=Objective("val_sparse_categorical_accuracy", direction="max"),
@@ -319,11 +326,8 @@ def kill_gpu_processes() -> None:
         None
     """
     if shutil.which("nvidia-smi") is None:
-        print("No NVIDIA GPU found. Skipping GPU process termination.")
+        logger.info("No NVIDIA GPU found. Skipping GPU process termination.")
         return
-
-    # set the keras dtype policy to float16 for faster training
-    keras.mixed_precision.set_global_policy("mixed_float16")
 
     try:
         # Get the list of GPU processes
@@ -338,13 +342,13 @@ def kill_gpu_processes() -> None:
                 print(f"Terminating process with PID: {pid}")
                 subprocess.run(["kill", "-9", pid])
     except Exception as e:
-        print(f"Error occurred while terminating GPU processes: {str(e)}")
+        logger.warning(f"Error occurred while terminating GPU processes: {str(e)}")
 
 
 def get_shape_with_batch_size(
     dataset: tf.data.Dataset, batch_size: int
 ) -> Tuple[Tuple[int, ...], Tuple[int, ...]]:
-    features_spec, labels_spec, _ = dataset.element_spec
+    features_spec, labels_spec = dataset.element_spec
     feature_shape = list(features_spec.shape)
     label_shape = list(labels_spec.shape)
 
@@ -394,6 +398,7 @@ def make_train_val_datasets(
     train_fraction: float = 0.8,
     batch_size: int = 32,
     buffer_size: int = 10000,
+    dataset_size: int = 0,
 ) -> Tuple[tf.data.Dataset, tf.data.Dataset, int, int]:
     """
     Split a dataset into training and validation sets based on individual examples.
@@ -414,12 +419,8 @@ def make_train_val_datasets(
     if isinstance(dataset.element_spec, tuple) and len(dataset.element_spec) > 1:
         dataset = dataset.unbatch()
 
-    # Shuffle the dataset
-    dataset = dataset.shuffle(buffer_size=buffer_size)
-
     # Count total examples
-    logger.info("Counting examples in train dataset...")
-    total_examples = count_examples(dataset, "train dataset")
+    total_examples = dataset_size * batch_size
 
     # Calculate the split
     train_size = int(total_examples * train_fraction)
@@ -430,8 +431,8 @@ def make_train_val_datasets(
     val_dataset = dataset.skip(train_size)
 
     # Batch the datasets
-    train_dataset = train_dataset.batch(batch_size)
-    val_dataset = val_dataset.batch(batch_size)
+    train_dataset = train_dataset.batch(batch_size, drop_remainder=False)
+    val_dataset = val_dataset.batch(batch_size, drop_remainder=False)
 
     # Calculate steps
     steps_per_epoch = (train_size + batch_size - 1) // batch_size
@@ -506,6 +507,13 @@ def select_lr_scheduler(
         )
 
 
+def count_batches_fast(dataset: tf.data.Dataset, dataset_name: str) -> int:
+    count = dataset.reduce(0, lambda x, _: x + 1)
+    example_count = int(count.numpy())  # Explicitly cast to int
+    logger.info(f"Batches in {dataset_name}: {example_count}")
+    return example_count
+
+
 def run_training_pipeline(
     etl_params: dict,
     tune_params: dict,
@@ -523,7 +531,11 @@ def run_training_pipeline(
     log_header(f"Using Capfinder v{version_info}")
     logger.info(formatted_command)
 
+    log_subheader("Step 0: Compute setup")
+
+    logger.info("Starting training pipeline...")
     kill_gpu_processes()
+    logger.info("Setting up data distributed training (if multiple GPUs available)...")
     set_data_distributed_training()
 
     etl_params["dataset_dir"] = os.path.join(shared_params["output_dir"], "dataset")
@@ -535,14 +547,25 @@ def run_training_pipeline(
     #############          ETL         ##############
     #################################################
     """
+
+    log_subheader("Step 1: Extract, Transform, Load (ETL)")
+
     # Prepare training datasets using ETL pipeline
-    train_dataset, test_dataset, dataset_version = train_etl(
+    (
+        train_dataset,
+        val_dataset,
+        test_dataset,
+        steps_per_epoch,
+        validation_steps,
+        dataset_version,
+    ) = train_etl(
         etl_params["caps_data_dir"],
         etl_params["dataset_dir"],
         shared_params["target_length"],
         shared_params["dtype"],
         etl_params["examples_per_class"],
-        shared_params["train_fraction"],
+        shared_params["train_test_fraction"],
+        shared_params["train_val_fraction"],
         shared_params["num_classes"],
         shared_params["batch_size"],
         etl_params["comet_project_name"],
@@ -567,6 +590,10 @@ def run_training_pipeline(
     #############        TUNE          ##############
     #################################################
     """
+    log_subheader("Step 2: Hyperparameter Tuning")
+
+    logger.info("Press CTRL + C once to stop the hyperparameter search at any point.")
+
     model_type = shared_params["model_type"]
     if model_type not in ["attention_cnn_lstm", "cnn_lstm", "encoder", "resnet"]:
         raise ValueError(
@@ -595,35 +622,28 @@ def run_training_pipeline(
         os.makedirs(model_save_dir, exist_ok=True)
     tuner = initialize_tuner(hyper_model, tune_params, model_save_dir, model_type)
 
-    logger.info("Counting train dataset batches...")
-    total_batches_train = count_batches(train_dataset, "train dataset")
     logger.info("Counting test dataset batches...")
-    total_batches_test = count_batches(test_dataset, "test dataset")
+    total_batches_test = count_batches_fast(test_dataset, "test dataset")
+
     logger.info(
-        f"Count done! Train - Test batches: {total_batches_train} - {total_batches_test}"
+        f"\nTrain set size: {steps_per_epoch} batches\nValidation set size: {validation_steps} batches\nTest set size: {total_batches_test} batches"
     )
-    trainv_dataset, val_dataset, steps_per_epoch, validation_steps = (
-        make_train_val_datasets(
-            dataset=train_dataset,  # Your original dataset
-            train_fraction=0.8,
-            batch_size=shared_params["batch_size"],
-            buffer_size=10000,  # Adjust as needed
-        )
-    )
-    total_batches_trainv = steps_per_epoch
-    # Apply repeat to the datasets
-    trainv_dataset = trainv_dataset.repeat()
+
+    train_dataset = train_dataset.repeat()
     val_dataset = val_dataset.repeat()
 
     # tensorboard_save_path = os.path.join(model_save_dir, "tensorboard_logs_encoder", model_type)
     # logger.info(
     #     f"Run tensorboard as following:\ntensorboard --logdir {tensorboard_save_path}"
     # )
+    logger.info(
+        f"Starting {tune_params["max_trials"]} trials of hyperparameter search..."
+    )
     try:
         tuner.search(
-            trainv_dataset.map(lambda x, y, z: (x, y)),
+            train_dataset.map(lambda x, y: (x, y)),
             steps_per_epoch=steps_per_epoch,
-            validation_data=val_dataset.map(lambda x, y, z: (x, y)),
+            validation_data=val_dataset.map(lambda x, y: (x, y)),
             validation_steps=validation_steps,
             epochs=tune_params["max_epochs_hpt"],
             callbacks=[
@@ -642,7 +662,7 @@ def run_training_pipeline(
             ],
         )
     except KeyboardInterrupt:
-        logger.info("Hyperparameter search was canceled.")
+        logger.info("Hyperparameter search was canceled by user.")
     finally:
         # Retrieve the best hyperparameters found during the search
         best_hp = tuner.get_best_hyperparameters(num_trials=1)[0]
@@ -673,6 +693,7 @@ def run_training_pipeline(
     #############        TRAIN         ##############
     #################################################
     """
+    log_subheader("Step 3: Final model training")
 
     train_experiment = initialize_comet_ml_experiment(
         project_name=train_params["comet_project_name"]
@@ -703,15 +724,18 @@ def run_training_pipeline(
     )
 
     # Select the learning rate scheduler
-    lr_scheduler = select_lr_scheduler(lr_scheduler_params, total_batches_trainv)
+    lr_scheduler = select_lr_scheduler(lr_scheduler_params, steps_per_epoch)
     custom_progress = CustomProgressCallback()
     comet_lr_logger = CometLRLogger(train_experiment)
     best_model_dir = os.path.join(shared_params["output_dir"], "best_model")
     if not os.path.exists(best_model_dir):
         os.makedirs(best_model_dir, exist_ok=True)
-    best_model_path = os.path.join(best_model_dir, "best_model_weights.weights.h5")
+    best_model_weights_path = os.path.join(
+        best_model_dir, "best_model_weights.weights.h5"
+    )
+
     model_checkpoint = keras.callbacks.ModelCheckpoint(
-        best_model_path,
+        best_model_weights_path,
         save_weights_only=True,
         save_best_only=True,
         monitor="val_loss",
@@ -729,20 +753,23 @@ def run_training_pipeline(
     ]
 
     best_model.fit(
-        trainv_dataset.map(lambda x, y, z: (x, y)),
+        train_dataset.map(lambda x, y: (x, y)),
         steps_per_epoch=steps_per_epoch,
-        validation_data=val_dataset.map(lambda x, y, z: (x, y)),
+        validation_data=val_dataset.map(lambda x, y: (x, y)),
         validation_steps=validation_steps,
         epochs=train_params["max_epochs_final_model"],
         batch_size=shared_params["batch_size"],
         callbacks=callbacks,
     )
     logger.success("Training on best hyperparameters done!")
-    best_model.load_weights(best_model_path)
+    best_model.load_weights(best_model_weights_path)
+
+    log_subheader("Step 4: Performance Evaluation")
 
     # Evaluate the best model on the test data
-    y_true_test = []
-    y_pred_test = []
+    batch_size = shared_params["batch_size"]
+    y_true_test = np.zeros(total_batches_test * batch_size)
+    y_pred_test = np.zeros(total_batches_test * batch_size)
 
     logger.info("Making predictions on test set for confusion matrix...")
     # Iterate through the test_dataset to collect true labels and predictions
@@ -750,19 +777,17 @@ def run_training_pipeline(
     pbar = tqdm(
         test_dataset, total=total_batches_test, desc="Processing test dataset batches"
     )
-    for batch_num, (features, labels, _) in enumerate(pbar, start=1):
-        predictions = best_model.predict(
-            features, verbose=0
-        )  # Assuming `best_model` is your trained model
-        y_true_test.extend(labels.numpy())
-        y_pred_test.extend(np.argmax(predictions, axis=1))
-        # Update the progress bar description
-        pbar.set_description(f"Processing batch {batch_num}/{total_batches_test}")
-        pbar.set_postfix({"Last batch shape": features.shape})
+    for batch_num, (features, labels) in enumerate(pbar):
+        predictions = best_model.predict(features, verbose=0)
+        start_idx = batch_num * batch_size
+        end_idx = (batch_num + 1) * batch_size
+        y_true_test[start_idx:end_idx] = labels.numpy()
+        y_pred_test[start_idx:end_idx] = np.argmax(predictions, axis=1)
+        pbar.set_description(f"Processing batch {batch_num + 1}/{total_batches_test}")
 
     # Convert lists to numpy arrays
-    y_true_test = np.array(y_true_test)  # type: ignore
-    y_pred_test = np.array(y_pred_test)  # type: ignore
+    y_true_test = np.array(y_true_test, dtype=np.int32)
+    y_pred_test = np.array(y_pred_test, dtype=np.int32)
     logger.success("Predictions on test set done!")
 
     # Assuming `map_cap_int_to_name` maps integers to class names
@@ -770,7 +795,7 @@ def run_training_pipeline(
 
     # Evaluate the best model on the test data
     logger.info("Evaluate final model performance on test dataset")
-    test_loss, test_acc = best_model.evaluate(test_dataset.map(lambda x, y, z: (x, y)))
+    test_loss, test_acc = best_model.evaluate(test_dataset.map(lambda x, y: (x, y)))
     logger.success("Model evaluation on test set done!")
     logger.info(f"Test loss: {test_loss}, Test accuracy: {test_acc}")
 
@@ -802,33 +827,32 @@ def run_training_pipeline(
     if train_experiment:
         train_experiment.log_model("Classifier", model_save_path)
         logger.info(f"Best classifier model saved at: \n{model_save_path}")
+        train_experiment.log_model("Classifier weights", best_model_weights_path)
+        logger.info(f"Best classifier weights saved at: \n{best_model_weights_path}")
+
         if best_encoder_model is not None:
             train_experiment.log_model("Encoder", encoder_save_path)
             logger.info(f"Best encoder model saved at: \n{encoder_save_path}")
 
     # Log the confusion matrix
-    # Initialize empty lists for true and predicted labels
-    y_true = []
-    y_pred = []
     # Predict using the model on training data
     logger.info("Making predictions on training set for confusion matrix...")
-    train_dataset = train_dataset.take(total_batches_train)  # because it is repeated
+    train_dataset = train_dataset.take(steps_per_epoch)  # because it is repeated
+    y_true = np.zeros(steps_per_epoch * batch_size, dtype=np.int32)
+    y_pred = np.zeros(steps_per_epoch * batch_size, dtype=np.int32)
 
-    pbar = tqdm(train_dataset, total=total_batches_train, desc="Processing batches")
-    for batch_num, (features, labels, _) in enumerate(pbar, start=1):
-        predictions = best_model.predict(
-            features, verbose=0  # Set to 0 to avoid nested progress bars
-        )
-        y_true.extend(labels.numpy())
-        y_pred.extend(np.argmax(predictions, axis=1))
-
-        # Update the progress bar description
-        pbar.set_description(f"Processing batch {batch_num}/{total_batches_train}")
-        pbar.set_postfix({"Last batch shape": features.shape})
+    pbar = tqdm(train_dataset, total=steps_per_epoch, desc="Processing batches")
+    for batch_num, (features, labels) in enumerate(pbar):
+        predictions = best_model.predict(features, verbose=0)
+        start_idx = batch_num * batch_size
+        end_idx = (batch_num + 1) * batch_size
+        y_true[start_idx:end_idx] = labels.numpy()
+        y_pred[start_idx:end_idx] = np.argmax(predictions, axis=1)
+        pbar.set_description(f"Processing batch {batch_num + 1}/{steps_per_epoch}")
 
     # Convert lists to numpy arrays
-    y_true = np.array(y_true)  # type: ignore
-    y_pred = np.array(y_pred)  # type: ignore
+    y_true = np.array(y_true)
+    y_pred = np.array(y_pred)
 
     # Assuming `map_cap_int_to_name` maps integers to class names
     class_labels = [map_cap_int_to_name(i) for i in range(shared_params["num_classes"])]
@@ -876,13 +900,19 @@ def run_training_pipeline(
             metadata={"Description": "Test dataset accuracy"},
         )
 
+        train_experiment.log_asset(
+            file_data=log_filepath,
+            file_name="Logfile",
+            step=0,
+        )
+
         train_experiment.end()
 
     grey = "\033[90m"
     reset = "\033[0m"
-    logger.success("Training finished!")
+    logger.success("Training pipeline ran successfully!")
     log_output(
-        f"Dataset was saved to the following path:\n {grey}{etl_params['dataset_dir']}{reset}\nModel weights have been saved to the following path:\n {grey}{best_model_path}{reset}\nThe log file has been saved to:\n {grey}{log_filepath}{reset}"
+        f"Dataset was saved to the following path:\n {grey}{etl_params['dataset_dir']}{reset}\nBest model's .keras file have been saved to the following path:\n {grey}{model_save_path}{reset}\nModel weights file was saved to the following path:\n {grey}{best_model_weights_path}{reset}\nThe log file has been saved to:\n {grey}{log_filepath}{reset}"
     )
     log_header("Processing finished!")
 
@@ -890,25 +920,25 @@ def run_training_pipeline(
 if __name__ == "__main__":
     # Configure settings here
     etl_params = {
-        "use_remote_dataset_version": "latest",  # version of the online dataset to use
+        "use_remote_dataset_version": "",  # version of the online dataset to use
         "caps_data_dir": "/export/valenfs/data/processed_data/MinION/9_madcap/3_all_train_csv_202405/all_csvs",
-        "examples_per_class": 100,  # maximum number of examples to use from the dataset
-        "comet_project_name": "dataset2",
+        "examples_per_class": 5000,  # maximum number of examples to use from the dataset
+        "comet_project_name": "dataset",
     }
 
     tune_params = {
-        "comet_project_name": "capfinder_tfr_tune-delete",
+        "comet_project_name": "capfinder_tune_delete",
         "patience": 0,
         "max_epochs_hpt": 3,
         "max_trials": 1,  # for random_search, and bayesian_optimization. For hyperband this has no effect
         "factor": 2,
         "seed": 42,
         "tuning_strategy": "bayesian_optimization",  # "hyperband" or "random_search" or "bayesian_optimization"
-        "overwrite": False,
+        "overwrite": True,
     }
 
     train_params = {
-        "comet_project_name": "capfinder_tfr_train-delete",
+        "comet_project_name": "capfinder_train_delete",
         "patience": 120,
         "max_epochs_final_model": 3,
     }
@@ -916,11 +946,12 @@ if __name__ == "__main__":
     shared_params = {
         "num_classes": 4,
         "model_type": "cnn_lstm",  # attention_cnn_lstm, cnn_lstm, resnet, encoder
-        "batch_size": 10,
+        "batch_size": 500,
         "target_length": 500,
         "dtype": "float16",
-        "train_fraction": 0.8,
-        "output_dir": "/export/valenfs/data/processed_data/MinION/9_madcap/9_output_202405_3/",
+        "train_test_fraction": 0.95,
+        "train_val_fraction": 0.8,
+        "output_dir": "/export/valenfs/data/processed_data/MinION/9_madcap/tmp",
     }
 
     # Learning Rate Scheduler Configuration
@@ -944,8 +975,8 @@ if __name__ == "__main__":
             "mult_factor": 1.5,
         },
     }
-    debug_code = False
-    # Run the training pipeline
+    debug_code = True
+
     run_training_pipeline(
         etl_params=etl_params,
         tune_params=tune_params,

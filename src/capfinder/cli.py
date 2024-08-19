@@ -348,12 +348,20 @@ def make_train_dataset(
             help="Number of examples to include per class in the dataset",
         ),
     ] = 1000,
-    train_fraction: Annotated[
+    train_test_fraction: Annotated[
         float,
         typer.Option(
-            "--train_fraction",
-            "-f",
-            help="Fraction of data to use for training (0.0 to 1.0)",
+            "--train_test_fraction",
+            "-tt",
+            help="Fraction of data out of all data to use for training (0.0 to 1.0)",
+        ),
+    ] = 0.95,
+    train_val_fraction: Annotated[
+        float,
+        typer.Option(
+            "--train_val_fraction",
+            "-tv",
+            help="Fraction of data out all the training split to use for validation (0.0 to 1.0)",
         ),
     ] = 0.8,
     num_classes: Annotated[
@@ -401,7 +409,8 @@ def make_train_dataset(
         --target_length 500 \\
         --dtype float16 \\
         --examples_per_class 1000 \\
-        --train_fraction 0.8 \\
+        --train_test_fraction 0.95 \\
+        --train_val_fraction 0.8 \\
         --num_classes 4 \\
         --batch_size 32 \\
         --comet_project_name my-capfinder-project \\
@@ -440,7 +449,8 @@ def make_train_dataset(
         target_length=target_length,
         dtype=dt,
         examples_per_class=examples_per_class,
-        train_fraction=train_fraction,
+        train_test_fraction=train_test_fraction,
+        train_val_fraction=train_val_fraction,
         num_classes=num_classes,
         batch_size=batch_size,
         comet_project_name=comet_project_name,
@@ -491,7 +501,8 @@ def create_train_config(
             "batch_size": 32,  # Batch size for training
             "target_length": 500,  # Target length for input sequences
             "dtype": "float16",  # Data type for model parameters. Options: "float16", "float32", "float64"
-            "train_fraction": 0.8,  # Fraction of data to use for training (vs. validation)
+            "train_test_fraction": 0.95,  # Fraction of total data to use for training (vs. testing)
+            "train_val_fraction": 0.8,  # Fraction of training data to use for training (vs. validation)
             "output_dir": "/dir/",  # Directory to save output files
         },
         "lr_scheduler_params": {

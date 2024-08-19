@@ -62,6 +62,7 @@ def initialize_comet_ml_experiment(project_name: str) -> Experiment:
             auto_histogram_weight_logging=True,
             auto_histogram_gradient_logging=False,
             auto_histogram_activation_logging=False,
+            display_summary_level=0,
         )
         logger.info(
             f"Successfully initialized CometML experiment for project: {project_name}"
@@ -157,6 +158,21 @@ def log_header(text: str) -> None:
     """
     width = get_terminal_width()
     header = f"\n{'=' * width}\n{text.center(width)}\n{'=' * width}"
+    logger.info(header)
+
+
+def log_subheader(text: str) -> None:
+    """
+    Log a centered subheader surrounded by '-' characters.
+
+    Args:
+        text (str): The text to be displayed in the header.
+
+    Returns:
+        None
+    """
+    width = get_terminal_width()
+    header = f"\n{'-' * width}\n{text.center(width)}\n{'-' * width}"
     logger.info(header)
 
 
