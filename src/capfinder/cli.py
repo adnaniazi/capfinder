@@ -393,6 +393,13 @@ def make_train_dataset(
             help="Version of the remote dataset to use. If not provided at all, the local dataset will be used/made and/or uploaded",
         ),
     ] = "",
+    use_augmentation: Annotated[
+        bool,
+        typer.Option(
+            "--use-augmentation/--no-use-augmentation",
+            help="Whether to augment original data with time warped data",
+        ),
+    ] = False,
 ) -> None:
     """
     Prepares dataset for training the ML model. This command can be run independently
@@ -415,6 +422,8 @@ def make_train_dataset(
         --batch_size 32 \\
         --comet_project_name my-capfinder-project \\
         --use_remote_dataset_version latest
+        --use-augmentation
+
     """
     from typing import cast
 
@@ -455,6 +464,7 @@ def make_train_dataset(
         batch_size=batch_size,
         comet_project_name=comet_project_name,
         use_remote_dataset_version=use_remote_dataset_version,
+        use_augmentation=use_augmentation,
     )
 
     grey = "\033[90m"
@@ -503,6 +513,7 @@ def create_train_config(
             "dtype": "float16",  # Data type for model parameters. Options: "float16", "float32", "float64"
             "train_test_fraction": 0.95,  # Fraction of total data to use for training (vs. testing)
             "train_val_fraction": 0.8,  # Fraction of training data to use for training (vs. validation)
+            "use_augmentation": False,  # Whether to include time warped versions of original training examples in the dataset
             "output_dir": "/dir/",  # Directory to save output files
         },
         "lr_scheduler_params": {

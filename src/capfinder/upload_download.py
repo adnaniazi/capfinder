@@ -338,10 +338,10 @@ def upload_dataset_to_comet(dataset_dir: str, project_name: str) -> str:
         logger.info(
             f"Dataset version {version} logged to Comet ML successfully. Upload will continue in the background."
         )
+        return version
     else:
         logger.error("Failed to log dataset to Comet ML.")
-
-    return ""
+        return ""
 
 
 def download_dataset_from_comet(

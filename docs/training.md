@@ -15,9 +15,10 @@ Let's delve into each stage in detail:
 The ETL stage is crucial for preparing our cap signal data, which is in the form of time series, for training. Here's what happens:
 
 - **Signal Processing**: Each signal is either truncated or zero-padded to a uniform length, which we call `target_length`. We typically set this to 500 data points.
-- **Balanced Dataset Creation**: We select `examples_per_class` number of examples from each class. To ensure a balanced dataset, make sure each class in your input CSV files has at least this many examples.
+- **Balanced Dataset Creation**: `examples_per_class` controls sample size per class for a balanced dataset. When specified, it selects that many examples from each class. If null, it automatically uses the size of the smallest class for all classes, ensuring equal representation and preventing bias in model training.
 - **Batched Loading**: Data is loaded into memory in class-balanced batches, controlled by the `batch_size` parameter. This approach allows us to handle cap signal files larger than available memory.
 - **Batch Size Considerations**: We recommend a batch size of 1024 or higher for efficiency. However, if you encounter GPU memory issues (indicated by a `Killed` message during hyperparameter tuning), try lowering the batch size. Some models, like the `encoder` type, are large and may require powerful GPUs and smaller batch sizes (as low as 16).
+- **Data Augmentation**: Users can set `use_augmentation` to add time warped versions of traning data during data.  When `True`, it adds two versions (squished and expanded) of each original training example, applying random warping between 0-20%. This triples the training set size and increases tuning and training time by approximately 3x. The augmentation enhances classifier robustness to RNA translocation speed variations, potentially improving classification accuracy. Users should weigh the increased training time against potential performance benefits when deciding to use this option.
 - **Data Versioning**: On the first run, the ETL stage creates train and test datasets, automatically versions them, and uploads them to Comet ML. This requires a valid Comet ML API key (free for academic users). Subsequent runs can load this preprocessed dataset, which is faster than reprocessing the original CSV files.
 
 ### 2. Tuning Stage
@@ -152,7 +153,9 @@ Let's break down the configuration file parameters:
     "batch_size": 32,
     "target_length": 500,
     "dtype": "float16",
-    "train_fraction": 0.8,
+    "train_test_fraction": 0.95,
+    "train_val_fraction": 0.8,
+    "use_augmentation": false,
     "output_dir": "/dir/"
 }
 ```
@@ -162,7 +165,8 @@ Let's break down the configuration file parameters:
 - `batch_size`: Batch size for training. Adjust based on GPU memory.
 - `target_length`: Target length for input sequences.
 - `dtype`: Data type for model parameters. Options: "float16", "float32", "float64".
-- `train_fraction`: Fraction of data to use for training vs. validation.
+- `train_test_fraction`: Fraction of data to use for training vs. testing. Testing set is the holdout set.
+- `train_val_fraction`: Fraction of training data to use for training vs. validation.
 - `output_dir`: Directory to save output files.
 
 ### Learning Rate Scheduler Parameters
@@ -201,27 +205,25 @@ Choose the scheduler type by setting the `type` parameter to one of "reduce_lr_o
 
 ## Important Considerations
 
-1. **Balanced Dataset**: Ensure each class has at least `examples_per_class` examples in the input CSV files.
+1. **Batch Size**: Start with a batch size of 1024 or higher. If you encounter memory issues, especially with larger models like "encoder", reduce the batch size.
 
-2. **Batch Size**: Start with a batch size of 1024 or higher. If you encounter memory issues, especially with larger models like "encoder", reduce the batch size.
+2. **GPU Monitoring**: Use commands like `nvidia-smi` to monitor GPU resources and adjust batch size accordingly.
 
-3. **GPU Monitoring**: Use commands like `nvidia-smi` to monitor GPU resources and adjust batch size accordingly.
+3. **Comet ML**: Ensure you have a valid Comet ML API key (free for academic users) for data versioning and experiment tracking.
 
-4. **Comet ML**: Ensure you have a valid Comet ML API key (free for academic users) for data versioning and experiment tracking.
-
-5. **Model Types**:
-    - "cnn_lstm": Simplest and fastest for training and inference.
-    - "encoder": Most computationally demanding.
+4. **Model Types**:
+    - "cnn_lstm": Simplest and fastest for training and inference. Achieves good accuracy.
+    - "encoder": Most computationally demanding. We had very little success with this model
     - "attention_cnn_lstm" and "resnet": Intermediate in terms of computational requirements.
 
-6. **Hyperparameter Tuning**: Can be interrupted at any time using CTRL+C. The best hyperparameters up to that point will be used for final training.
+5. **Hyperparameter Tuning**: Can be interrupted at any time using CTRL+C. The best hyperparameters up to that point will be used for final training.
 
-7. **Final Training**: Uses the best hyperparameters to train the model for a longer duration, allowing it to reach performance plateau.
+6. **Final Training**: Uses the best hyperparameters to train the model for a longer duration, allowing it to reach performance plateau.
 
-8. **Automatic Stopping**: The training process will automatically stop when performance ceases to improve, loading the weights from the most promising epoch.
+7. **Automatic Stopping**: The training process will automatically stop when performance ceases to improve, loading the weights from the most promising epoch.
 
-9. **Model Evaluation**: The final model is tested on a held-out test set, providing an unbiased performance assessment.
+8. **Model Evaluation**: The final model is tested on a held-out test set, providing an unbiased performance assessment.
 
-10. **Output**: Performance metrics, confusion matrix, and the final model (in .keras format) are saved and logged in Comet ML.
+9. **Output**: Performance metrics, confusion matrix, and the final model (in .keras format) are saved and logged in Comet ML.
 
 By following this guide and adjusting the configuration parameters as needed, you can effectively train and evaluate your Capfinder classifier. The process is designed to be flexible, allowing you to balance between computational resources, time constraints, and model performance based on your specific requirements.

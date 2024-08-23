@@ -9,6 +9,64 @@ from capfinder.ml_libs import float16, float32, float64, tf
 DtypeLiteral = Literal["float16", "float32", "float64"]
 
 
+def parse_row(
+    row: Tuple[str, str, str], target_length: int, dtype: tf.DType
+) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+    """
+    Parse a row of data and convert it to the appropriate tensor format.
+    Padding and truncation are performed equally on both sides of the time series.
+
+    Args:
+        row (Tuple[str, str, str]): A tuple containing read_id, cap_class, and timeseries as strings.
+        target_length (int): The desired length of the timeseries tensor.
+        dtype (tf.DType): The desired data type for the timeseries tensor.
+
+    Returns:
+        Tuple[tf.Tensor, tf.Tensor, tf.Tensor]: A tuple containing the parsed and formatted tensors for
+        timeseries, cap_class, and read_id.
+    """
+    read_id, cap_class, timeseries = row
+    cap_class = tf.strings.to_number(cap_class, out_type=tf.int32)
+
+    # Split the timeseries string and convert to float
+    timeseries = tf.strings.split(timeseries, sep=",")
+    timeseries = tf.strings.to_number(timeseries, out_type=tf.float32)
+
+    # Get the current length of the timeseries
+    current_length = tf.shape(timeseries)[0]
+
+    # Function to pad the timeseries
+    def pad_timeseries() -> tf.Tensor:
+        pad_amount = target_length - current_length
+        pad_left = pad_amount // 2
+        pad_right = pad_amount - pad_left
+        return tf.pad(
+            timeseries,
+            [[pad_left, pad_right]],
+            constant_values=0.0,
+        )
+
+    # Function to truncate the timeseries
+    def truncate_timeseries() -> tf.Tensor:
+        truncate_amount = current_length - target_length
+        truncate_left = truncate_amount // 2
+        truncate_right = current_length - (truncate_amount - truncate_left)
+        return timeseries[truncate_left:truncate_right]
+
+    # Pad or truncate the timeseries to the target length
+    padded = tf.cond(
+        current_length >= target_length, truncate_timeseries, pad_timeseries
+    )
+
+    padded = tf.reshape(padded, (target_length, 1))
+
+    # Cast to the desired dtype
+    if dtype != tf.float32:
+        padded = tf.cast(padded, dtype)
+
+    return padded, cap_class, read_id
+
+
 def get_dtype(dtype: str) -> tf.DType:
     """
     Convert a string dtype to its corresponding TensorFlow data type.
@@ -56,58 +114,6 @@ def csv_generator(
         chunk = df.slice(start, chunk_size).collect()
         for row in chunk.iter_rows():
             yield (str(row[0]), str(row[1]), str(row[2]))
-
-
-def parse_row(
-    row: Tuple[str, str, str], target_length: int, dtype: tf.DType
-) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
-    """
-    Parse a row of data and convert it to the appropriate tensor format.
-
-    Args:
-        row (Tuple[str, str, str]): A tuple containing read_id, cap_class, and timeseries as strings.
-        target_length (int): The desired length of the timeseries tensor.
-        dtype (tf.DType): The desired data type for the timeseries tensor.
-
-    Returns:
-        Tuple[tf.Tensor, tf.Tensor, tf.Tensor]: A tuple containing the parsed and formatted tensors for
-        timeseries, cap_class, and read_id.
-
-    Raises:
-        ValueError: If an unsupported dtype is provided.
-    """
-    read_id, cap_class, timeseries = row
-    read_id = tf.strings.strip(read_id)
-    cap_class = tf.strings.to_number(cap_class, out_type=tf.int32)
-
-    timeseries = tf.strings.to_number(
-        tf.strings.split(timeseries, ","), out_type=tf.float32
-    )
-
-    padded = tf.cond(
-        tf.shape(timeseries)[0] >= target_length,
-        lambda: timeseries[:target_length],
-        lambda: tf.pad(
-            timeseries,
-            [[0, target_length - tf.shape(timeseries)[0]]],
-            constant_values=0.0,
-        ),
-    )
-
-    padded = tf.reshape(padded, (target_length, 1))
-
-    if dtype == tf.float16:
-        padded = tf.cast(padded, tf.float16)
-    elif dtype == tf.float32:
-        padded = tf.cast(padded, tf.float32)
-    elif dtype == tf.float64:
-        padded = tf.cast(padded, tf.float64)
-    else:
-        raise ValueError(
-            f"Unsupported dtype: {dtype}. Expected float16, float32, or float64."
-        )
-
-    return padded, cap_class, read_id
 
 
 def create_dataset(

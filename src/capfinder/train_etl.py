@@ -7,9 +7,10 @@ from typing import Dict, Generator, List, Optional, Tuple
 from loguru import logger
 from tqdm import tqdm
 
-# Assuming these are imported from your existing module
 from capfinder.inference_data_loader import DtypeLiteral, get_dtype
 from capfinder.ml_libs import tf
+
+# Assuming these are imported from your existing module
 from capfinder.upload_download import CometArtifactManager, upload_dataset_to_comet
 from capfinder.utils import map_cap_int_to_name
 
@@ -119,6 +120,23 @@ def count_examples_python(file_path: str) -> int:
         return sum(1 for _ in f) - 1  # Subtract 1 for header
 
 
+def find_class_with_least_rows(class_files: Dict[int, List[str]]) -> Tuple[int, int]:
+    min_class = -1
+    min_rows = float("inf")
+
+    for class_id, files in class_files.items():
+        class_rows = sum(count_examples_fast(file) for file in files)
+        logger.info(f"Class {class_id} has {class_rows} examples.")
+        if class_rows < min_rows:
+            min_rows = class_rows
+            min_class = class_id
+
+    if min_class == -1:
+        raise ValueError("No valid classes found in the input dictionary.")
+
+    return min_class, int(min_rows)
+
+
 def load_train_dataset_from_csvs(
     x_file_path: str,
     y_file_path: str,
@@ -126,6 +144,7 @@ def load_train_dataset_from_csvs(
     target_length: int,
     dtype: tf.DType,
     train_val_fraction: float = 0.8,
+    use_augmentation: bool = False,
 ) -> Tuple[tf.data.Dataset, tf.data.Dataset, int, int]:
     """
     Load training dataset from CSV files and split into train and validation sets.
@@ -137,6 +156,7 @@ def load_train_dataset_from_csvs(
         target_length (int): Target length of each time series.
         dtype (tf.DType): Data type for the features.
         train_val_fraction (float, optional): Fraction of data to use for training. Defaults to 0.8.
+        use_augmentation (bool): Whether to augment original training examples with warped versions
 
     Returns:
         Tuple[tf.data.Dataset, tf.data.Dataset, int, int]: Train dataset, validation dataset,
@@ -162,27 +182,37 @@ def load_train_dataset_from_csvs(
         total_examples, train_val_fraction, batch_size
     )
 
-    # Calculate steps per epoch and validation steps
-    steps_per_epoch = train_size // batch_size
-    validation_steps = val_size // batch_size
+    # Split dataset into train and validation
+    train_dataset = dataset.take(train_size)
+    val_dataset = dataset.skip(train_size).take(val_size)
 
-    # Create and process the datasets
-    train_dataset = (
-        dataset.take(train_size)
-        .map(parse_fn, num_parallel_calls=tf.data.AUTOTUNE)
-        .batch(batch_size, drop_remainder=True)
-        .map(lambda x, y: (tf.cast(x, dtype), y))
-        .prefetch(tf.data.AUTOTUNE)
+    # Process and augment the training dataset
+    train_dataset = train_dataset.map(
+        parse_fn, num_parallel_calls=tf.data.AUTOTUNE
+    ).map(lambda x, y: (tf.cast(x, dtype), y))
+
+    if use_augmentation:
+        train_dataset = train_dataset.map(
+            lambda x, y: augment_example(x, y, dtype)
+        ).flat_map(
+            lambda x: x
+        )  # Flatten the dataset of datasets
+
+    train_dataset = train_dataset.batch(batch_size, drop_remainder=True).prefetch(
+        tf.data.AUTOTUNE
     )
 
+    # Process the validation dataset (no augmentation)
     val_dataset = (
-        dataset.skip(train_size)
-        .take(val_size)
-        .map(parse_fn, num_parallel_calls=tf.data.AUTOTUNE)
+        val_dataset.map(parse_fn, num_parallel_calls=tf.data.AUTOTUNE)
         .batch(batch_size, drop_remainder=True)
         .map(lambda x, y: (tf.cast(x, dtype), y))
         .prefetch(tf.data.AUTOTUNE)
     )
+
+    # Recalculate steps per epoch
+    steps_per_epoch = (train_size * (3 if use_augmentation else 1)) // batch_size
+    validation_steps = val_size // batch_size
 
     return (
         train_dataset,
@@ -240,6 +270,7 @@ def create_train_val_test_datasets_from_train_test_csvs(
     target_length: int,
     dtype: tf.DType,
     train_val_fraction: float,
+    use_augmentation: bool = False,
 ) -> Tuple[tf.data.Dataset, tf.data.Dataset, tf.data.Dataset, int, int]:
     """
     Load ready-made train, validation, and test datasets from CSV files.
@@ -250,6 +281,7 @@ def create_train_val_test_datasets_from_train_test_csvs(
         target_length (int): Target length of each time series.
         dtype (tf.DType): Data type for the features.
         train_val_fraction (float): Fraction of training data to use for validation.
+        use_augmentation (bool): Whether to augment original training examples with warped versions
 
     Returns:
         Tuple[tf.data.Dataset, tf.data.Dataset, tf.data.Dataset, int, int]:
@@ -265,6 +297,7 @@ def create_train_val_test_datasets_from_train_test_csvs(
             target_length=target_length,
             dtype=dtype,
             train_val_fraction=train_val_fraction,
+            use_augmentation=use_augmentation,
         )
     )
     logger.info("Loading test split ...")
@@ -325,6 +358,7 @@ def parse_row(
 ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
     """
     Parse a row of data and convert it to the appropriate tensor format.
+    Padding and truncation are performed equally on both sides of the time series.
 
     Args:
         row (Tuple[str, str, str]): A tuple containing read_id, cap_class, and timeseries as strings.
@@ -342,15 +376,30 @@ def parse_row(
     timeseries = tf.strings.split(timeseries, sep=",")
     timeseries = tf.strings.to_number(timeseries, out_type=tf.float32)
 
+    # Get the current length of the timeseries
+    current_length = tf.shape(timeseries)[0]
+
+    # Function to pad the timeseries
+    def pad_timeseries() -> tf.Tensor:
+        pad_amount = target_length - current_length
+        pad_left = pad_amount // 2
+        pad_right = pad_amount - pad_left
+        return tf.pad(
+            timeseries,
+            [[pad_left, pad_right]],
+            constant_values=0.0,
+        )
+
+    # Function to truncate the timeseries
+    def truncate_timeseries() -> tf.Tensor:
+        truncate_amount = current_length - target_length
+        truncate_left = truncate_amount // 2
+        truncate_right = current_length - (truncate_amount - truncate_left)
+        return timeseries[truncate_left:truncate_right]
+
     # Pad or truncate the timeseries to the target length
     padded = tf.cond(
-        tf.shape(timeseries)[0] >= target_length,
-        lambda: timeseries[:target_length],
-        lambda: tf.pad(
-            timeseries,
-            [[0, target_length - tf.shape(timeseries)[0]]],
-            constant_values=0.0,
-        ),
+        current_length >= target_length, truncate_timeseries, pad_timeseries
     )
 
     padded = tf.reshape(padded, (target_length, 1))
@@ -592,6 +641,82 @@ def get_local_dataset_version(dataset_dir: str) -> Optional[str]:
     return stored_version
 
 
+def create_warped_examples(
+    signal: tf.Tensor, max_warp_factor: float = 0.3, dtype: tf.DType = tf.float32
+) -> Tuple[tf.Tensor, tf.Tensor]:
+    """
+    Create warped versions (squished and expanded) of the input signal.
+
+    Args:
+        signal (tf.Tensor): The input signal to be warped.
+        max_warp_factor (float): The maximum factor by which the signal can be warped. Defaults to 0.3.
+        dtype (tf.DType): The desired data type for the output tensors. Defaults to tf.float32.
+
+    Returns:
+        Tuple[tf.Tensor, tf.Tensor]: A tuple containing the squished and expanded versions of the input signal.
+    """
+    original_dtype = signal.dtype
+    signal = tf.cast(signal, tf.float32)  # Convert to float32 for internal calculations
+
+    time_steps = tf.shape(signal)[0]
+
+    # Create squished version
+    squish_factor = 1 - tf.random.uniform((), 0, max_warp_factor, seed=43)
+    squished_length = tf.cast(tf.cast(time_steps, tf.float32) * squish_factor, tf.int32)
+    squished = tf.image.resize(tf.expand_dims(signal, -1), (squished_length, 1))[
+        :, :, 0
+    ]
+    pad_total = time_steps - squished_length
+    pad_left = pad_total // 2
+    pad_right = pad_total - pad_left
+    padding = [[pad_left, pad_right], [0, 0]]
+    squished = tf.pad(squished, padding)
+
+    # Create expanded version
+    expand_factor = 1 + tf.random.uniform((), 0, max_warp_factor, seed=43)
+    expanded_length = tf.cast(tf.cast(time_steps, tf.float32) * expand_factor, tf.int32)
+    expanded = tf.image.resize(tf.expand_dims(signal, -1), (expanded_length, 1))[
+        :, :, 0
+    ]
+    trim_total = expanded_length - time_steps
+    trim_left = trim_total // 2
+    trim_right = expanded_length - (trim_total - trim_left)
+    expanded = expanded[trim_left:trim_right]
+
+    # Cast back to original dtype
+    squished = tf.cast(squished, original_dtype)
+    expanded = tf.cast(expanded, original_dtype)
+
+    return squished, expanded
+
+
+def augment_example(x: tf.Tensor, y: tf.Tensor, dtype: tf.DType) -> tf.data.Dataset:
+    """
+    Augment a single example by creating warped versions and combining them with the original.
+
+    Args:
+        x (tf.Tensor): The input tensor to be augmented.
+        y (tf.Tensor): The corresponding label tensor.
+        dtype (tf.DType): The desired data type for the augmented tensors.
+
+    Returns:
+        tf.data.Dataset: A dataset containing the original and augmented examples with their labels.
+    """
+    # Apply augmentation to each example in the batch
+    squished, expanded = create_warped_examples(x, 0.2, dtype=dtype)
+
+    # Ensure all tensors have the same data type
+    x = tf.cast(x, dtype)
+    squished = tf.cast(squished, dtype)
+    expanded = tf.cast(expanded, dtype)
+
+    # Create a list of augmented examples
+    augmented_x = [x, squished, expanded]
+    augmented_y = [y, y, y]
+
+    return tf.data.Dataset.from_tensor_slices((augmented_x, augmented_y))
+
+
 def train_etl(
     caps_data_dir: str,
     dataset_dir: str,
@@ -604,6 +729,7 @@ def train_etl(
     batch_size: int,
     comet_project_name: str,
     use_remote_dataset_version: str = "",
+    use_augmentation: bool = False,
 ) -> Tuple[tf.data.Dataset, tf.data.Dataset, tf.data.Dataset, int, int, str]:
     """
     Process the data from multiple class files, create balanced datasets,
@@ -621,12 +747,11 @@ def train_etl(
         batch_size (int): The number of samples per batch.
         comet_project_name (str): Name of the Comet ML project.
         use_remote_dataset_version (str): Version of the remote dataset to use, if any.
-
+        use_augmentation (bool): Whether to augment original training examples with warped versions
     Returns:
         Tuple[tf.data.Dataset, tf.data.Dataset, tf.data.Dataset, int, int, str]:
         The train, validation, and test datasets, steps per epoch, validation steps, and the dataset version.
     """
-
     comet_obj = CometArtifactManager(
         project_name=comet_project_name, dataset_dir=dataset_dir
     )
@@ -648,7 +773,12 @@ def train_etl(
             )
         train_dataset, val_dataset, test_dataset, steps_per_epoch, validation_steps = (
             create_train_val_test_datasets_from_train_test_csvs(
-                dataset_dir, batch_size, target_length, dtype, train_val_fraction
+                dataset_dir,
+                batch_size,
+                target_length,
+                dtype,
+                train_val_fraction,
+                use_augmentation,
             )
         )
         write_dataset_version_info(dataset_dir, version=use_remote_dataset_version)
@@ -680,7 +810,12 @@ def train_etl(
                 steps_per_epoch,
                 validation_steps,
             ) = create_train_val_test_datasets_from_train_test_csvs(
-                dataset_dir, batch_size, target_length, dtype, train_val_fraction
+                dataset_dir,
+                batch_size,
+                target_length,
+                dtype,
+                train_val_fraction,
+                use_augmentation,
             )
             logger.info(f"Local dataset v{current_local_version} loaded successfully.")
             return (
@@ -696,6 +831,15 @@ def train_etl(
         not current_local_version and use_remote_dataset_version == ""
     ):
         class_files = group_files_by_class(caps_data_dir)
+        min_class, min_rows = find_class_with_least_rows(class_files)
+        if examples_per_class is None:
+            examples_per_class = min_rows
+        else:
+            examples_per_class = min(examples_per_class, min_rows)
+        logger.info(
+            f"Each class in the dataset will have {examples_per_class} examples"
+        )
+
         train_datasets = []
         test_datasets = []
         for class_id, file_paths in class_files.items():
@@ -773,6 +917,7 @@ def train_etl(
                 target_length,
                 dtype,
                 train_val_fraction=train_val_fraction,
+                use_augmentation=use_augmentation,
             )
         )
 
@@ -789,8 +934,8 @@ def train_etl(
 
 
 if __name__ == "__main__":
-    caps_data_dir = "/export/valenfs/data/processed_data/MinION/9_madcap/3_all_train_csv_202405/all_csvs"
-    dataset_dir = "/export/valenfs/data/processed_data/MinION/9_madcap/tmp"
+    caps_data_dir = "/home/valen/10-data-for-upload-to-mega/uncompressed/all_csvs"
+    dataset_dir = "/home/valen/10-data-for-upload-to-mega/uncompressed/dataset"
     target_length = 500
     dtype: DtypeLiteral = "float16"
     examples_per_class = 100  # Set to None if you want to use all available examples
@@ -800,6 +945,7 @@ if __name__ == "__main__":
     num_classes = 4
     comet_project_name = "dataset"
     use_remote_dataset_version = ""
+    use_augmentation = True
 
     (
         train_dataset,
@@ -820,6 +966,7 @@ if __name__ == "__main__":
         batch_size,
         comet_project_name,
         use_remote_dataset_version,
+        use_augmentation,
     )
 
     print(f"Train dataset: {train_dataset}")

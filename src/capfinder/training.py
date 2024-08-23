@@ -393,60 +393,6 @@ def count_batches(dataset: tf.data.Dataset, dataset_name: str) -> int:
     return count
 
 
-def make_train_val_datasets(
-    dataset: tf.data.Dataset,
-    train_fraction: float = 0.8,
-    batch_size: int = 32,
-    buffer_size: int = 10000,
-    dataset_size: int = 0,
-) -> Tuple[tf.data.Dataset, tf.data.Dataset, int, int]:
-    """
-    Split a dataset into training and validation sets based on individual examples.
-
-    Args:
-    dataset (tf.data.Dataset): The input dataset to split.
-    train_fraction (float): Fraction of data to use for training (default: 0.8).
-    batch_size (int): Batch size for both datasets (default: 32).
-    buffer_size (int): Buffer size for shuffling (default: 10000).
-
-    Returns:
-    tuple: (train_dataset, val_dataset, steps_per_epoch, validation_steps)
-    """
-    logger.info(
-        "Spliting train dataset further into trainv and val datasets for tuning..."
-    )
-    # Ensure the dataset is unbatched
-    if isinstance(dataset.element_spec, tuple) and len(dataset.element_spec) > 1:
-        dataset = dataset.unbatch()
-
-    # Count total examples
-    total_examples = dataset_size * batch_size
-
-    # Calculate the split
-    train_size = int(total_examples * train_fraction)
-    val_size = total_examples - train_size
-
-    # Split the dataset
-    train_dataset = dataset.take(train_size)
-    val_dataset = dataset.skip(train_size)
-
-    # Batch the datasets
-    train_dataset = train_dataset.batch(batch_size, drop_remainder=False)
-    val_dataset = val_dataset.batch(batch_size, drop_remainder=False)
-
-    # Calculate steps
-    steps_per_epoch = (train_size + batch_size - 1) // batch_size
-    validation_steps = (val_size + batch_size - 1) // batch_size
-
-    # Prefetch for performance
-    train_dataset = train_dataset.prefetch(tf.data.AUTOTUNE)
-    val_dataset = val_dataset.prefetch(tf.data.AUTOTUNE)
-    logger.info(
-        f"{total_examples} examples split in {steps_per_epoch} trainv and {validation_steps} val batches"
-    )
-    return train_dataset, val_dataset, steps_per_epoch, validation_steps
-
-
 def select_lr_scheduler(
     lr_scheduler_params: dict, train_size: int
 ) -> Union[keras.callbacks.ReduceLROnPlateau, CyclicLR, SGDRScheduler]:
@@ -570,6 +516,7 @@ def run_training_pipeline(
         shared_params["batch_size"],
         etl_params["comet_project_name"],
         etl_params["use_remote_dataset_version"],
+        shared_params["use_augmentation"],
     )
 
     logger.info("Dataset loaded successfully!")
@@ -637,7 +584,7 @@ def run_training_pipeline(
     #     f"Run tensorboard as following:\ntensorboard --logdir {tensorboard_save_path}"
     # )
     logger.info(
-        f"Starting {tune_params["max_trials"]} trials of hyperparameter search..."
+        f"Starting {tune_params['max_trials']} trials of hyperparameter search..."
     )
     try:
         tuner.search(
@@ -921,9 +868,9 @@ if __name__ == "__main__":
     # Configure settings here
     etl_params = {
         "use_remote_dataset_version": "",  # version of the online dataset to use
-        "caps_data_dir": "/export/valenfs/data/processed_data/MinION/9_madcap/3_all_train_csv_202405/all_csvs",
+        "caps_data_dir": "/home/valen/10-data-for-upload-to-mega/uncompressed/all_csvs",
         "examples_per_class": 5000,  # maximum number of examples to use from the dataset
-        "comet_project_name": "dataset",
+        "comet_project_name": "dataset2",
     }
 
     tune_params = {
@@ -951,7 +898,8 @@ if __name__ == "__main__":
         "dtype": "float16",
         "train_test_fraction": 0.95,
         "train_val_fraction": 0.8,
-        "output_dir": "/export/valenfs/data/processed_data/MinION/9_madcap/tmp",
+        "use_augmentation": False,
+        "output_dir": "/home/valen/10-data-for-upload-to-mega/uncompressed/output",
     }
 
     # Learning Rate Scheduler Configuration
