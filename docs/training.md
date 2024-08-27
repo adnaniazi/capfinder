@@ -15,7 +15,7 @@ Let's delve into each stage in detail:
 The ETL stage is crucial for preparing our cap signal data, which is in the form of time series, for training. Here's what happens:
 
 - **Signal Processing**: Each signal is either truncated or zero-padded to a uniform length, which we call `target_length`. We typically set this to 500 data points.
-- **Balanced Dataset Creation**: `examples_per_class` controls sample size per class for a balanced dataset. When specified, it selects that many examples from each class. If null, it automatically uses the size of the smallest class for all classes, ensuring equal representation and preventing bias in model training.
+- **Balanced Dataset Creation**: `examples_per_class` controls sample size per class for a balanced dataset. When specified, it selects that many examples from each class. If `null`, it automatically uses the size of the smallest class for all classes, ensuring equal representation and preventing bias in model training.
 - **Batched Loading**: Data is loaded into memory in class-balanced batches, controlled by the `batch_size` parameter. This approach allows us to handle cap signal files larger than available memory.
 - **Batch Size Considerations**: We recommend a batch size of 1024 or higher for efficiency. However, if you encounter GPU memory issues (indicated by a `Killed` message during hyperparameter tuning), try lowering the batch size. Some models, like the `encoder` type, are large and may require powerful GPUs and smaller batch sizes (as low as 16).
 - **Data Augmentation**: Users can set `use_augmentation` to add time warped versions of traning data during data.  When `True`, it adds two versions (squished and expanded) of each original training example, applying random warping between 0-20%. This triples the training set size and increases tuning and training time by approximately 3x. The augmentation enhances classifier robustness to RNA translocation speed variations, potentially improving classification accuracy. Users should weigh the increased training time against potential performance benefits when deciding to use this option.
@@ -72,9 +72,11 @@ export COMET_API_KEY="your-api-key-here"
 
 Before running the training pipeline, you need to create a JSON configuration file. Use the following command to generate a template:
 
-```bash
-capfinder create-train-config --file_path /path/to/your/config.json
-```
+!!! example
+
+    ```bash
+    capfinder create-train-config --file_path /path/to/your/config.json
+    ```
 
 This will create a JSON file with default values. Edit this file to suit your specific needs.
 
@@ -82,9 +84,19 @@ This will create a JSON file with default values. Edit this file to suit your sp
 
 Once you've customized your configuration file, start the training process with:
 
-```bash
-capfinder train-model --config_file /path/to/your/config.json
-```
+!!! example
+
+    ```bash
+    capfinder train-model --config_file /path/to/your/config.json
+    ```
+
+!!! tip "Prematurely quiting hyperparameter tuning"
+
+    Hyperparameter tuning takes a lot of time and will run until `max_trials` number of trials have been executed. If you are feeling impatient, or think that you have acheived good enough accuracy already, you can interrupt tuning by Pressing `CTRL+C` once at any time during tuning. The best hyperparameter upto that time point will used for the subsequent final classifier training.
+
+!!! tip "Prematurely quiting final classifier training"
+
+    The final classifier will be trained for multiple epochs as specified in the `max_epochs_final_model` setting. You can interrupt the final model training at any point in time by Pressing `CTRL+C` once. The models for the best epoch will be restored and this final model will be saved as as `.keras` file. It's weights will also be saved in an `.h5` file.
 
 ## Configuration File Parameters
 
@@ -103,7 +115,7 @@ Let's break down the configuration file parameters:
 
 - `use_remote_dataset_version`: Version of the remote dataset to use. Set to `""` to use/create a local dataset.
 - `caps_data_dir`: Directory containing cap signal data files for all classes. This is the directory where all the [cap signal csv file for all the classes are stored](all_caps_data.md)
-- `examples_per_class`: Maximum number of examples to use per class.
+- `examples_per_class`: Maximum number of examples to use per class. If `null`, it automatically uses the size of the smallest class for all classes, ensuring equal representation and preventing bias in model training.
 - `comet_project_name`: Name of the Comet ML project for dataset logging.
 
 ### Tuning Parameters
@@ -167,6 +179,7 @@ Let's break down the configuration file parameters:
 - `dtype`: Data type for model parameters. Options: "float16", "float32", "float64".
 - `train_test_fraction`: Fraction of data to use for training vs. testing. Testing set is the holdout set.
 - `train_val_fraction`: Fraction of training data to use for training vs. validation.
+- `use_augmentation`: Whether to augment real training data with time-warped (squished and expanded) data
 - `output_dir`: Directory to save output files.
 
 ### Learning Rate Scheduler Parameters

@@ -1,8 +1,6 @@
 site_name: "Capfinder"
 repo_url: https://github.com/adnaniazi/capfinder
 
-
-
 theme:
   name: material
   features:
@@ -22,21 +20,23 @@ nav:
   - Introduction: 'index.md'
   - Installation: 'installation.md'
   - Usage:
-      - mRNA Sample Preparation: 'mRNA_sample_prep.md'
-      - Data Preparation: 'preprocessing.md'
-      - Cap Prediction: 'prediction.md'
+      - 1. mRNA Sample Preparation: 'mRNA_sample_prep.md'
+      - 2. Data Preparation: 'preprocessing.md'
+      - 3. Cap Prediction: 'prediction.md'
   - Training for New Caps:
-          - Designing cap oligo: 'oligo_design.md'
-          - Sequencing and basecalling: 'sequencing_and_basecalling.md'
-          - Extending cap mapping: 'extend_capmap.md'
-          - Extracting cap signal: 'extract_train_signal.md'
-          - Downloading data for existing caps: 'all_caps_data.md'
-          - Training capfinder: 'training.md'
+          - 1. Designing Cap Oligo: 'oligo_design.md'
+          - 2. Sequencing and Basecalling: 'sequencing_and_basecalling.md'
+          - 3. Extending Cap Mapping: 'extend_capmap.md'
+          - 4. Extracting Cap Signal: 'extract_train_signal.md'
+          - 5. Making Training Data: 'all_caps_data.md'
+          - 6. Training Capfinder: 'training.md'
+          - 7. Using Custom Trained Model: 'using_custom_model.md'
   - Updating Capfinder: 'updating.md'
   - Developer Guide: 'development_setup.md'
   - Using Capfinder's Python API: 'python_api.md'
   - API Documentation: api_docs.md
   - Change Log: changelog.md
+  - Our Contributors: 'contributions.md'
 
 markdown_extensions:
   - pymdownx.highlight:

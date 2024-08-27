@@ -35,7 +35,7 @@ This command predicts RNA cap types using BAM and POD5 files.
 
 - `--plot-signal` / `--no-plot-signal`: Whether to plot extracted cap signal or not. Default is `--no-plot-signal`
 
-- `--custom-model-path` or `-m`: Path to a custom model (.keras) file. If not provided, the default pre-packaged model will be used.
+- `--custom_model_path` or `-m`: Path to a custom model (.keras) file. If not provided, the default pre-packaged model will be used.
 
 :   Saving plots can help you plot the read's signal, and plot the signal for cap and flanking bases(&#177;5).
 

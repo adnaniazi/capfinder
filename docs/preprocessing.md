@@ -26,55 +26,57 @@ To generate the required data, we use a custom script that performs the followin
 
 Below is a script that automates this process. You'll need to adjust the paths and settings to match your environment:
 
-```bash
-#!/bin/bash
-# Please edit to reflect your settings
-DORADO="/path/to/bin/dorado"
-SAMTOOLS="/path/to/samtools"
-POD5_DIR="/path/to/pod5_dir"
-REF="/path/to/ref.fa"
-MODEL_NAME="rna004_130bps_sup@v5.0.0"
-MODEL_DIR="/path/to/download/doardo/model"
-OUTPUT_DIR="/path/to/save/basecalled/data"
-DEVICE="cuda:all" # For Dorado to use GPU
+!!! example "basecall.sh"
 
-#---------------------- DO NOT EDIT BELOW THIS LINE ---------------------#
+    ```sh
+    #!/bin/bash
+    # Please edit to reflect your settings
+    DORADO="/path/to/bin/dorado"
+    SAMTOOLS="/path/to/samtools"
+    POD5_DIR="/path/to/pod5_dir"
+    REF="/path/to/ref.fa"
+    MODEL_NAME="rna004_130bps_sup@v5.0.0"
+    MODEL_DIR="/path/to/download/doardo/model"
+    OUTPUT_DIR="/path/to/save/basecalled/data"
+    DEVICE="cuda:all" # For Dorado to use GPU
 
-# Function to check and download the model if necessary
-check_and_download_model() {
-    local model_path="$MODEL_DIR/$MODEL_NAME"
-    if [ ! -d "$model_path" ]; then
-        echo "Model not found. Downloading..."
-        "$DORADO" download --directory "$MODEL_DIR" --model "$MODEL_NAME"
-    else
-        echo "Model already exists. Skipping download."
-    fi
-}
+    #---------------------- DO NOT EDIT BELOW THIS LINE ---------------------#
 
-# Create output directory
-mkdir -p "$OUTPUT_DIR"
+    # Function to check and download the model if necessary
+    check_and_download_model() {
+        local model_path="$MODEL_DIR/$MODEL_NAME"
+        if [ ! -d "$model_path" ]; then
+            echo "Model not found. Downloading..."
+            "$DORADO" download --directory "$MODEL_DIR" --model "$MODEL_NAME"
+        else
+            echo "Model already exists. Skipping download."
+        fi
+    }
 
-# Check and download the model if necessary
-check_and_download_model
+    # Create output directory
+    mkdir -p "$OUTPUT_DIR"
 
-# Run dorado basecaller and pipe directly to samtools for sorting and indexing
-echo "Starting basecalling and BAM creation..."
-"$DORADO" basecaller "$MODEL_DIR/$MODEL_NAME" "$POD5_DIR/" \
-    --recursive \
-    --emit-sam \
-    --emit-moves \
-    --device "$DEVICE" \
-    --reference "$REF" | \
-"$SAMTOOLS" view -bS - | \
-"$SAMTOOLS" sort -o "$OUTPUT_DIR/sorted.bam" -
+    # Check and download the model if necessary
+    check_and_download_model
 
-# Index the sorted BAM file
-echo "Indexing the sorted BAM file..."
-"$SAMTOOLS" index "$OUTPUT_DIR/sorted.bam"
+    # Run dorado basecaller and pipe directly to samtools for sorting and indexing
+    echo "Starting basecalling and BAM creation..."
+    "$DORADO" basecaller "$MODEL_DIR/$MODEL_NAME" "$POD5_DIR/" \
+        --recursive \
+        --emit-sam \
+        --emit-moves \
+        --device "$DEVICE" \
+        --reference "$REF" | \
+    "$SAMTOOLS" view -bS - | \
+    "$SAMTOOLS" sort -o "$OUTPUT_DIR/sorted.bam" -
 
-echo "Basecalling and processing completed. Output files are in $OUTPUT_DIR"
-echo "Generated files: sorted.bam and sorted.bam.bai"
-```
+    # Index the sorted BAM file
+    echo "Indexing the sorted BAM file..."
+    "$SAMTOOLS" index "$OUTPUT_DIR/sorted.bam"
+
+    echo "Basecalling and processing completed. Output files are in $OUTPUT_DIR"
+    echo "Generated files: sorted.bam and sorted.bam.bai"
+    ```
 
 To use this script:
 

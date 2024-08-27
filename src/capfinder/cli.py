@@ -688,7 +688,7 @@ def predict_cap_types(
     custom_model_path: Annotated[
         Optional[str],
         typer.Option(
-            "--custom-model-path",
+            "--custom_model_path",
             "-m",
             help="Path to a custom model (.keras) file. If not provided, the default pre-packaged model will be used.",
         ),

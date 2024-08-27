@@ -8,7 +8,7 @@
 
 ---
 
-Capfinder is a cutting-edge deep learning framework designed for accurate prediction of RNA cap types in mRNAs sequenced using Oxford Nanopore Technologies (ONT) SQK-RNA004 chemistry. By leveraging the power of native RNA sequencing data, Capfinder determines the cap structure of individual transcripts with great precision.
+Capfinder is a cutting-edge deep learning framework designed for accurate prediction of RNA cap types in mRNAs sequenced using Oxford Nanopore Technologies (ONT) SQK-RNA004 chemistry. By leveraging the power of native RNA sequencing data, Capfinder predicts the cap type on individual transcript molecules with high accuracy.
 
 ## Key Features
 
