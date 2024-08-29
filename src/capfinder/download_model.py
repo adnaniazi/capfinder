@@ -81,7 +81,7 @@ def download_comet_model(
 if __name__ == "__main__":
     workspace = "adnaniazi"
     model_name = "cnn_lstm-classifier"
-    version = "1.1.0"
+    version = "1.2.0"
     output_dir = "/export/valenfs/data/processed_data/MinION/9_madcap/a_code/capfinder/src/capfinder/model"
     force_download = False
     download_comet_model(workspace, model_name, version, output_dir, force_download)
