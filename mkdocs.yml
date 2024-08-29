@@ -20,10 +20,12 @@ nav:
   - Introduction: 'index.md'
   - Installation: 'installation.md'
   - Usage:
+      - 0. Graphical overview: 'usage_overview.md'
       - 1. mRNA Sample Preparation: 'mRNA_sample_prep.md'
       - 2. Data Preparation: 'preprocessing.md'
       - 3. Cap Prediction: 'prediction.md'
   - Training for New Caps:
+          - 0. Graphical overview: 'training_overview.md'
           - 1. Designing Cap Oligo: 'oligo_design.md'
           - 2. Sequencing and Basecalling: 'sequencing_and_basecalling.md'
           - 3. Extending Cap Mapping: 'extend_capmap.md'

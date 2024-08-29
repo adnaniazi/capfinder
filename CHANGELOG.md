@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.4.2] - 2024-08-27
 ### Fixed
 - Fixed cli arguments
 - Fixed readme and documentation errors.
@@ -166,7 +168,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Added
 - Basic skeleton of the package and tested it
 
-[Unreleased]: https://github.com/adnaniazi/capfinder/compare/0.4.1...master
+[Unreleased]: https://github.com/adnaniazi/capfinder/compare/0.4.2...master
+[0.4.2]: https://github.com/adnaniazi/capfinder/compare/0.4.1...0.4.2
 [0.4.1]: https://github.com/adnaniazi/capfinder/compare/0.4.0...0.4.1
 [0.4.0]: https://github.com/adnaniazi/capfinder/compare/0.3.9...0.4.0
 [0.3.9]: https://github.com/adnaniazi/capfinder/compare/0.3.8...0.3.9
