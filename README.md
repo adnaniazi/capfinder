@@ -104,11 +104,18 @@ capfinder predict-cap-types \
 ## Documentation
 Please read the Capfinder's [comprehensive documentation](https://adnaniazi.github.io/capfinder/) for detailed information on using Capfinder.
 
-## Contributing
-Contributions to Capfinder are welcome! Please refer to the contribution guidelines for more information.
-
 ## License
 Capfinder is released under the MIT License.
 
 ## Want to Collaborate
 Please [contact](https://www.mn.uio.no/ibv/personer/vit/edv/) Eivind D. Valen at University of Oslo.
+
+## Contributors
+Capfinder's success and development would not have been possible without the efforts and contributions of the following people:
+
+1. Adnan Niazi
+2. Eivind Valen
+2. Maximillian Krause
+3. Jan Inge Øverbo
+4. Teshome Bizuayehu
+5. Kersti Nilsson
