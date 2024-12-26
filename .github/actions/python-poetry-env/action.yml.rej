@@ -1,0 +1,16 @@
+diff a/.github/actions/python-poetry-env/action.yml b/.github/actions/python-poetry-env/action.yml	(rejected hunks)
+@@ -5,12 +5,12 @@ inputs:
+   python-version:
+     required: false
+     description: 'Python version'
+-    default: '3.10'
++    default: '3.12'
+ outputs: {}
+ runs:
+   using: 'composite'
+   steps:
+-    - uses: actions/setup-python@v4
++    - uses: actions/setup-python@v5
+       with:
+         python-version: ${{inputs.python-version}}
+     - name: Install poetry
